@@ -1,3 +1,8 @@
+# 0.6.0
+
+- O Circuito Inicial agora envia os 40 NPCs em um lote assinado quando o Criador de Personagens oferece `npcBatch` (v0.1.9+); versões anteriores continuam usando a ponte individual compatível.
+- Todos os modelos levam proveniência `quedaco-teatro`, contexto do Teatro, tags de circuito, função e equipe, permitindo localizar e organizar os Actors dentro do Criador.
+
 # 0.5.0
 
 - Batalha de Equipes agora monta a **Areia da Prova**, uma Cena 30×20 com miniatura, seis zonas de entrada e arte original incluída no módulo.

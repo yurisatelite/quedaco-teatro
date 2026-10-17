@@ -72,6 +72,7 @@ test('modelos do circuito são detalhados, estáveis e a sincronização não du
   assert.equal(new Set(CIRCUIT_NPCS.map(row=>row.model.id)).size,40);
   for(const row of CIRCUIT_NPCS){
     assert.match(row.model.appearance,/./);assert.match(row.model.routine,/./);assert.match(row.model.desire,/./);assert.ok(row.model.possessions.length>=3);
+    assert.equal(row.model.sourceModule,'quedaco-teatro');assert.ok(row.model.tags.includes('circuito-inicial'));
   }
   const actors=CIRCUIT_NPCS.map((row,index)=>({id:`a${index}`,uuid:`Actor.a${index}`,flags:{},async setFlag(scope,key,value){this.flags[scope]??={};this.flags[scope][key]=value;}}));
   const calls=[];
@@ -84,6 +85,12 @@ test('modelos do circuito são detalhados, estáveis e a sincronização não du
   assert.equal(s.bettors.filter(row=>row.actorId).length,16);assert.equal(s.personnel.filter(row=>row.actorId).length,8);
   await synchronizeCircuitCompetitorTags(s,{game:{actors:{get:id=>actors.find(actor=>actor.id===id)}}});
   assert.ok(actors.filter(actor=>actor.flags['quedaco-teatro']?.competitor?.teamId).length===16);
+});
+test('Criador com suporte a lote recebe os 40 modelos em uma única prévia assinada',async()=>{
+  const actors=CIRCUIT_NPCS.map((row,index)=>({id:`batch-${index}`,uuid:`Actor.batch${index}`,async setFlag(){}}));let prepared=0,created=0;
+  const creator={capabilities:{npcTemplates:true,npcBatch:true},async prepareNpcBatch(batch){prepared++;assert.equal(batch.npcs.length,40);return {signature:'lote-assinado',errors:[]};},async createNpcBatch(_batch,{expectedSignature}){created++;assert.equal(expectedSignature,'lote-assinado');return {created:0,existing:40,warnings:[],results:CIRCUIT_NPCS.map((row,index)=>({id:row.model.id,name:row.model.name,status:'existing',actorUuid:actors[index].uuid}))};}};
+  const result=await createCircuitActors(creator,{game:{actors}});
+  assert.equal(prepared,1);assert.equal(created,1);assert.equal(result.linked.length,40);assert.equal(result.existing,40);
 });
 test('arena cria Cena, seis Tokens nas zonas, Combate e iniciativa sem aceitar escalação inválida',async()=>{
   const s=initialState(CATALOG);const actors=Array.from({length:6},(_,index)=>({id:`actor-${index}`,name:`Actor ${index}`,prototypeToken:{toObject:()=>({name:`Actor ${index}`})},async getTokenDocument(data){return {toObject:()=>({name:this.name,...data})};}}));

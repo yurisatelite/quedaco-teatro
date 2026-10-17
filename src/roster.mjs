@@ -128,13 +128,40 @@ export const CIRCUIT_NPCS=Object.freeze([
     const [possessions,routine]=PERSONNEL_PROPS[name];const key=npcKey(name);
     return {key,kind:'personnel',role,model:template({key,name,job:`Bastidores do Teatro · ${role}`,appearance:`Profissional do Coliseu que carrega o cansaço de muitos espetáculos. ${publicText}`,clothes:'Uniforme funcional do Teatro, remendado nos pontos de maior uso e sem insígnia que revele lealdade demais.',behavior:'Faz o trabalho com precisão; trata a crueldade da arena como problema logístico até que alguém cruza um limite.',voice:'Controlada e econômica, capaz de ficar gentil ou fria conforme o público exige.',routine,desire:'Manter sua posição no Teatro sem abandonar a própria linha moral.',fear:'Que um erro de bastidor vire uma morte que poderia ter sido evitada.',secret,hook:`Os personagens podem precisar de ${name} para atravessar uma porta, descobrir uma irregularidade ou proteger alguém do sistema do Coliseu.`,tactics:'Evita confronto aberto. Conhece passagens, horários e procedimentos do Coliseu; chama ajuda e protege civis antes de lutar.',possessions,cash:55})};
   })
-]);
+].map(row=>({...row,model:{...row.model,
+  sourceModule:'quedaco-teatro',
+  context:'Circuito Inicial do Teatro dos Condenados, Coliseu de Kravokia no Deserto de Mirmir.',
+  teamId:row.teamName?`teatro-team:${npcKey(row.teamName)}`:'',
+  tags:['quedaco','teatro-dos-condenados','circuito-inicial',row.kind,...(row.teamName?[`equipe:${npcKey(row.teamName)}`]:[]),...(row.style?[`perfil:${npcKey(row.style)}`]:[])],
+  description:`Cadastro do Circuito Inicial do Teatro dos Condenados. Papel: ${row.role??row.style??'bastidores'}.`
+}})));
 
 export function circuitNpc(key){return CIRCUIT_NPCS.find(row=>row.key===key)??null;}
 
 /** Cria as fichas pela API oficial e devolve vínculos, sem tocar no estado do Teatro. */
 export async function createCircuitActors(creator,{game=globalThis.game,onProgress=()=>{}}={}){
-  if(!creator?.capabilities?.npcTemplates||typeof creator.prepareNpcTemplate!=='function'||typeof creator.createNpcFromTemplate!=='function')throw Error('Instale e ative QUEDAÇO - Personagens Skyfall RPG para criar as fichas do elenco.');
+  const batchAvailable=Boolean(creator?.capabilities?.npcBatch&&typeof creator.prepareNpcBatch==='function'&&typeof creator.createNpcBatch==='function');
+  const individualAvailable=typeof creator?.prepareNpcTemplate==='function'&&typeof creator?.createNpcFromTemplate==='function';
+  if(!creator?.capabilities?.npcTemplates||(!batchAvailable&&!individualAvailable))throw Error('Instale e ative QUEDAÇO - Personagens Skyfall RPG para criar as fichas do elenco.');
+  const batch={name:'Teatro dos Condenados · Circuito Inicial',npcs:CIRCUIT_NPCS.map(row=>row.model)};
+  if(batchAvailable){
+    const preview=await creator.prepareNpcBatch(batch);
+    if(preview.errors?.length)throw Error(`O Criador encontrou ${preview.errors.length} ficha(s) inválida(s): ${preview.errors.slice(0,3).map(row=>`${row.name??row.id}: ${row.error}`).join(' · ')}`);
+    const result=await creator.createNpcBatch(batch,{expectedSignature:preview.signature});
+    const failures=(result.results??[]).filter(row=>['error','needs-review'].includes(row.status));
+    if(failures.length)throw Error(`O lote criou parte das fichas, mas ${failures.length} ficou com pendência: ${failures.slice(0,3).map(row=>`${row.name}: ${row.error??row.status}`).join(' · ')}`);
+    const linked=[];
+    for(const item of result.results??[]){
+      const row=CIRCUIT_NPCS.find(candidate=>candidate.model.id===item.id);if(!row)continue;
+      const actor=await globalThis.fromUuid?.(item.actorUuid)??Array.from(game.actors??[]).find(candidate=>candidate.uuid===item.actorUuid);
+      if(!actor)throw Error(`${item.name}: a ficha foi criada, mas não pôde ser vinculada ao Teatro.`);
+      const tag={key:row.key,kind:row.kind,teamName:row.teamName??'',role:row.role??'',registeredAt:Date.now()};
+      await actor.setFlag?.('quedaco-teatro','npc',tag);
+      if(row.kind==='competitor')await actor.setFlag?.('quedaco-teatro','competitor',{teamName:row.teamName,role:row.role,registeredAt:tag.registeredAt});
+      linked.push({key:row.key,actorId:actor.id,actorUuid:actor.uuid});
+    }
+    return {created:result.created??0,existing:result.existing??0,linked,warnings:result.warnings??[]};
+  }
   const previews=[];
   for(const row of CIRCUIT_NPCS){
     onProgress(row);

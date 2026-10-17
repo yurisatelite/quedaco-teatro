@@ -107,7 +107,7 @@ export function createTheatreApp(store) {
             const current=store.read();
             await store.mutate(s=>applyCircuitActorLinks(s,result.linked),current.revision);
             await synchronizeCircuitCompetitorTags(store.read(),{game});
-            this.notice=`Elenco sincronizado: ${result.created} ficha(s) criada(s), ${result.existing} já existente(s).`;
+            this.notice=`Elenco sincronizado: ${result.created} ficha(s) criada(s), ${result.existing} já existente(s).${result.warnings?.length?` ${result.warnings.length} relação(ões) aguardam revisão.`:''}`;
           }else {
             await store.mutate(s=>{
               if(action==='reveal'){const row=s.entries.find(r=>r.id===id);if(row)row.revealed=!row.revealed;}
