@@ -1,4 +1,4 @@
-import {ID, TITLE, clone, initialState, publicState, uid} from './model.mjs';
+import {ID, TITLE, clone, initialState, normalizeState, publicState, uid} from './model.mjs';
 export function createStore(game, {create, seed, uuid=uid} = {}) {
   let queue = Promise.resolve();
   const serial = fn => {const result=queue.then(fn); queue=result.catch(()=>{}); return result;};
@@ -11,11 +11,11 @@ export function createStore(game, {create, seed, uuid=uid} = {}) {
   };
   return {
     async initialize() {gm(); return serial(async()=>{if(!find('source'))await write(null,'source',{state:initialState(await seed())},false);});},
-    read() {gm(); const state=data(find('source'))?.state; if(!state)throw Error('Inicialize o Teatro com uma conta de mestre.'); return clone(state);},
+    read() {gm(); const state=data(find('source'))?.state; if(!state)throw Error('Inicialize o Teatro com uma conta de mestre.'); return clone(normalizeState(state));},
     published() {const value=data(find('publication'))?.publication; return value?.active ? clone(value) : null;},
     async mutate(fn, expectedRevision) {
       gm(); return serial(async()=>{
-        const doc=find('source'), state=clone(data(doc)?.state);
+        const doc=find('source'), state=clone(normalizeState(data(doc)?.state));
         if(!state)throw Error('Direção indisponível.');
         if(expectedRevision!==undefined && state.revision!==expectedRevision)throw Error('Os dados mudaram. Atualize a janela antes de salvar.');
         await fn(state); state.revision++;

@@ -15,7 +15,16 @@ export function required(value) {
   return text;
 }
 export function initialState(catalog) {
-  return {schema:1, revision:0, announcement:'As portas do Teatro dos Condenados estão abertas. Nas areias de Kravokia, a próxima lenda pode ser você.', currency:'fichas', crowd:1200, mood:'Expectativa', treasury:0, notes:'', incident:'', entries:clone(catalog), events:[], bets:[], teams:[], contracts:[]};
+  return {schema:2, revision:0, announcement:'As portas do Teatro dos Condenados estão abertas. Nas areias de Kravokia, a próxima lenda pode ser você.', currency:'fichas', crowd:1200, mood:'Expectativa', treasury:0, notes:'', incident:'', entries:clone(catalog), events:[], bets:[], teams:[], bettors:[], contracts:[]};
+}
+export function normalizeState(state) {
+  state.schema ??= 1; state.events ??= []; state.bets ??= []; state.teams ??= []; state.bettors ??= []; state.contracts ??= [];
+  for (const team of state.teams) { team.members ??= []; team.visible ??= false; team.fame ??= 0; team.sponsor ??= ''; }
+  for (const event of state.events) {
+    event.status ??= 'open'; event.visible ??= true; event.winner ??= null;
+    if (event.game === 'Batalha de Equipes') event.battle ??= battleSetup({});
+  }
+  state.schema = 2; return state;
 }
 // Explicit allowlist: never spread private records into public documents.
 export function publicState(state) {
@@ -23,35 +32,71 @@ export function publicState(state) {
     schema:1, announcement:state.announcement, currency:state.currency,
     crowd:state.crowd, mood:state.mood,
     entries:state.entries.filter(e => e.revealed).map(e => ({id:e.id, category:e.category, name:e.name, text:e.text})),
-    events:state.events.filter(e => e.visible).map(e => ({id:e.id, name:e.name, game:e.game, sides:[...e.sides], terrain:e.terrain, reward:e.reward, status:e.status, winner:e.winner, odds:[...e.odds]})),
-    teams:state.teams.filter(t => t.visible).map(t => ({id:t.id, name:t.name, fame:t.fame}))
+    events:state.events.filter(e => e.visible).map(e => ({id:e.id, name:e.name, game:e.game, sides:[...e.sides], terrain:e.terrain, reward:e.reward, status:e.status, winner:e.winner, odds:[...e.odds], battle:e.battle ? publicBattle(e.battle) : null})),
+    teams:state.teams.filter(t => t.visible).map(t => ({id:t.id, name:t.name, fame:t.fame, members:(t.members ?? []).map(m => ({name:m.name, role:m.role}))}))
   };
 }
+const choices = new Set(['objetivos','eliminação','rendição','tempo']);
+const deathPolicies = new Set(['permitida','proibida','acidental']);
+export function battleSetup(input) {
+  const condition = choices.has(input.condition) ? input.condition : 'objetivos';
+  const deaths = deathPolicies.has(input.deaths) ? input.deaths : 'permitida';
+  const target = amount(input.target ?? 3, 1);
+  if (!Number.isInteger(target) || target > 20) throw Error('O alvo da batalha deve ser um inteiro entre 1 e 20.');
+  return {format:required(input.format || '3 contra 3'),condition,deaths,target,roundLimit:amount(input.roundLimit ?? 6, 1),medics:input.medics !== 'no',rules:String(input.rules ?? ''),score:[0,0],deathsCount:[0,0],phase:'scheduled',log:[]};
+}
+export function publicBattle(battle) { return {format:battle.format,condition:battle.condition,deaths:battle.deaths,target:battle.target,roundLimit:battle.roundLimit,medics:battle.medics,score:[...battle.score],deathsCount:[...battle.deathsCount],phase:battle.phase}; }
 export function addEvent(state, input, id = uid()) {
   const name = required(input.name), sides = [required(input.a), required(input.b)];
   if (sides[0].toLowerCase() === sides[1].toLowerCase()) throw Error('Os lados precisam ter nomes diferentes.');
   const odds = [amount(input.oddsA, 1), amount(input.oddsB, 1)];
-  state.events.push({id,name,game:String(input.game),sides,odds,terrain:String(input.terrain ?? ''),reward:String(input.reward ?? ''),visible:true,status:'open',winner:null});
+  const game=String(input.game);
+  state.events.push({id,name,game,sides,teamIds:[String(input.teamA ?? ''),String(input.teamB ?? '')],odds,terrain:String(input.terrain ?? ''),reward:String(input.reward ?? ''),visible:true,status:'open',winner:null,battle:game === 'Batalha de Equipes' ? battleSetup(input) : null});
+}
+export function addBettor(state, input, id = uid()) {
+  const bankroll=amount(input.bankroll,0), debt=amount(input.debt,0);
+  state.bettors.push({id,name:required(input.name),origin:required(input.origin),purpose:required(input.purpose),style:required(input.style || 'Prudente'),bankroll,debt,actorId:String(input.actorId ?? ''),notes:String(input.notes ?? '')});
 }
 export function placeBet(state, input, id = uid()) {
   const event = state.events.find(e => e.id === input.eventId);
   if (!event || event.status !== 'open') throw Error('Apostas encerradas ou espetáculo indisponível.');
   const side = Number(input.side);
   if (![0,1].includes(side)) throw Error('Escolha um lado válido.');
-  const stake = amount(input.stake, 0.01);
-  state.bets.push({id,eventId:event.id,bettor:required(input.bettor),side,stake,odds:event.odds[side],status:'pending',payout:0});
+  const stake = amount(input.stake, 0.01), bettorId=String(input.bettorId ?? '');
+  const bettor=bettorId ? state.bettors.find(b=>b.id===bettorId) : null;
+  if (bettor && bettor.bankroll < stake) throw Error(`${bettor.name} não possui fichas suficientes para essa aposta.`);
+  if (bettor) bettor.bankroll=amount(bettor.bankroll-stake);
+  state.bets.push({id,eventId:event.id,bettorId:bettor?.id ?? '',bettor:bettor?.name ?? required(input.bettor),side,stake,odds:event.odds[side],status:'pending',payout:0});
   state.treasury = amount(state.treasury + stake, -1e9);
 }
 export function settleEvent(state, eventId, winner) {
   const event = state.events.find(e => e.id === eventId);
-  if (!event || !['open','closed'].includes(event.status)) throw Error('Espetáculo já encerrado ou indisponível.');
+  if (!event || !['open','closed','live'].includes(event.status)) throw Error('Espetáculo já encerrado ou indisponível.');
   if (![0,1,'void'].includes(winner)) throw Error('Resultado inválido.');
   event.status = winner === 'void' ? 'void' : 'settled';
   event.winner = winner;
   for (const bet of state.bets.filter(b => b.eventId === eventId && b.status === 'pending')) {
     bet.payout = winner === 'void' ? bet.stake : bet.side === winner ? amount(bet.stake * bet.odds) : 0;
     bet.status = winner === 'void' ? 'refunded' : bet.payout ? 'won' : 'lost';
+    const bettor=bet.bettorId && state.bettors.find(b=>b.id===bet.bettorId);
+    if (bettor) bettor.bankroll=amount(bettor.bankroll+bet.payout);
     state.treasury = amount(state.treasury - bet.payout, -1e9);
   }
+}
+export function startBattle(state,eventId) {
+  const event=state.events.find(e=>e.id===eventId); if(!event?.battle) throw Error('Esta não é uma Batalha de Equipes.');
+  if (!['open','closed'].includes(event.status)) throw Error('A batalha não pode mais começar.');
+  event.status='live';event.battle.phase='live';
+}
+export function recordBattle(state,eventId,side,kind,note='') {
+  const event=state.events.find(e=>e.id===eventId), battle=event?.battle;
+  if(!battle||event.status!=='live')throw Error('A batalha ainda não está em andamento.');
+  side=Number(side);if(![0,1].includes(side))throw Error('Equipe inválida.');
+  if(kind==='point')battle.score[side]++;
+  else if(kind==='death') {if(battle.deaths==='proibida')throw Error('Mortes são proibidas nesta prova.');battle.deathsCount[side]++;}
+  else throw Error('Registro de batalha inválido.');
+  battle.log.push({id:uid(),side,kind,note:String(note).slice(0,240)});
+  const other=side===0?1:0;
+  if ((battle.condition==='objetivos'&&battle.score[side]>=battle.target) || (battle.condition==='eliminação'&&battle.deathsCount[other]>=battle.target)) settleEvent(state,eventId,side);
 }
 export const reputation = fame => fame >= 20 ? 'Lenda' : fame >= 12 ? 'Ídolo do deserto' : fame >= 6 ? 'Campeão local' : fame >= 2 ? 'Promessa' : 'Desconhecido';

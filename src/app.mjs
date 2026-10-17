@@ -1,4 +1,4 @@
-import {ID, TITLE, publicState, addEvent, placeBet, settleEvent, required, amount, uid, escape as e} from './model.mjs';
+import {ID, TITLE, publicState, addEvent, addBettor, placeBet, recordBattle, settleEvent, startBattle, required, amount, uid, escape as e} from './model.mjs';
 import {renderView} from './view.mjs';
 export function createTheatreApp(store) {
   return class TheatreApp extends foundry.applications.api.ApplicationV2 {
@@ -8,7 +8,8 @@ export function createTheatreApp(store) {
       const gm=game.user.isGM, published=store.published();
       const source=gm?store.read():null;
       this.revision=source?.revision;
-      return renderView({state:gm?(this.preview?publicState(source):source):published,gm,preview:this.preview,tab:this.tab,category:this.category,query:this.query,notice:this.notice,published});
+      const actors=gm&&!this.preview?Array.from(game.actors ?? []).map(actor=>({id:actor.id,name:actor.name,type:actor.type})).sort((a,b)=>a.name.localeCompare(b.name,'pt-BR')):[];
+      return renderView({state:gm?(this.preview?publicState(source):source):published,gm,preview:this.preview,tab:this.tab,category:this.category,query:this.query,notice:this.notice,published,actors});
     }
     _replaceHTML(result,content) {content.innerHTML=result;}
     _onRender(context,options) {
@@ -68,6 +69,10 @@ export function createTheatreApp(store) {
             const yes=await foundry.applications.api.DialogV2.confirm({window:{title:'Confirmar resultado'},content:`<p>${e(event.name)}: ${winner==='void'?'anular e devolver todas as apostas':`vitória de ${e(event.sides[winner])}`}?</p><p>O lançamento financeiro só pode ser efetuado uma vez.</p>`});
             if(!yes)return;
             await store.mutate(s=>settleEvent(s,id,winner),this.revision);
+          }else if(action==='start-battle') {
+            await store.mutate(s=>startBattle(s,id),this.revision);
+          }else if(action==='battle-point'||action==='battle-death') {
+            await store.mutate(s=>recordBattle(s,id,target.dataset.side,action==='battle-point'?'point':'death'),this.revision);
           }else if(action==='incident') {
             const {INCIDENTS}=await import('./catalog.mjs');
             const roll=await new foundry.dice.Roll(`1d${INCIDENTS.length}`).evaluate();
@@ -90,10 +95,24 @@ export function createTheatreApp(store) {
       this.requireGM();if(this.busy)return;this.busy=true;
       try {
         const values=Object.fromEntries(new FormData(form)), action=form.dataset.qtForm;
-        await store.mutate(s=>{
-          if(action==='event')addEvent(s,values);
+        await store.mutate(async s=>{
+          if(action==='event') {
+            const teamA=s.teams.find(t=>t.id===values.teamA),teamB=s.teams.find(t=>t.id===values.teamB);
+            if(teamA)values.a=teamA.name;if(teamB)values.b=teamB.name;
+            if(!values.a||!values.b)throw Error('Escolha equipes cadastradas ou escreva os dois nomes dos lados.');
+            if(values.teamA&&values.teamA===values.teamB)throw Error('Uma equipe não pode enfrentar a si mesma.');
+            addEvent(s,values);
+          }
           if(action==='bet')placeBet(s,values);
-          if(action==='team')s.teams.push({id:uid(),name:required(values.name),sponsor:values.sponsor,fame:0,visible:false});
+          if(action==='bettor')addBettor(s,values);
+          if(action==='team')s.teams.push({id:uid(),name:required(values.name),sponsor:values.sponsor,fame:0,visible:false,members:[]});
+          if(action==='team-member') {
+            const team=s.teams.find(t=>t.id===values.teamId),actor=game.actors?.get(values.actorId);
+            if(!team||!actor)throw Error('Equipe ou Actor indisponível.');
+            if(s.teams.some(t=>t.members.some(m=>m.actorId===actor.id)))throw Error(`${actor.name} já está inscrito em uma equipe.`);
+            team.members.push({actorId:actor.id,name:actor.name,role:required(values.role)});
+            await actor.setFlag?.(ID,'competitor',{teamId:team.id,teamName:team.name,role:values.role,registeredAt:Date.now()});
+          }
           if(action==='contract')s.contracts.push({id:uid(),name:required(values.name),party:required(values.party),debt:amount(values.debt),terms:values.terms,closed:false});
           if(action==='direction') {
             const crowd=amount(values.crowd);

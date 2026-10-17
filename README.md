@@ -1,6 +1,6 @@
 # QUEDAÇO - O Teatro dos Condenados
 
-Versão inicial 0.1.0 para Foundry VTT 13, baseada na instalação local 13.351. Conteúdo autoral de campanha situado em Kravokia e no Deserto de Mirmir, para uso com Skyfall RPG. Personagens, instituições, provas e mistérios são propostas da campanha, não afirmações de cânone. Não inclui texto de livros ou fichas oficiais.
+Versão 0.2.0 para Foundry VTT 13, baseada na instalação local 13.351. Conteúdo autoral de campanha situado em Kravokia e no Deserto de Mirmir, para uso com Skyfall RPG. Personagens, instituições, provas e mistérios são propostas da campanha, não afirmações de cânone. Não inclui texto de livros ou fichas oficiais.
 
 ## Instalação e abertura
 
@@ -16,9 +16,13 @@ Escolha quais registros incluir usando “Incluir na próxima publicação”. E
 
 “Fechar apresentação” limpa o conteúdo da cópia pública e fecha a janela nos clientes. Isso não desfaz o que alguém já leu ou copiou. Quem entrar depois consegue abrir o último cartaz ainda ativo pelo menu. O JournalEntry público guarda dados em flags para esta interface; sua folha padrão não é a apresentação.
 
-## Apostas e gestão
+## Batalha de equipes e apostas
 
-Apenas o mestre registra apostas nesta versão. As cotações são decimais: apostar 100 a 1,75 retorna 175 no total se vencer. A cotação fica congelada no bilhete. Encerrar apostas bloqueia novos bilhetes; confirmar vitória liquida todos uma única vez; anular devolve os valores. O caixa recebe entradas e deduz retornos. Pode ficar negativo, representando insolvência. O módulo não transfere moedas nem itens entre fichas.
+Batalha de Equipes é a primeira modalidade implementada a fundo. Ao programá-la, defina formato, terreno, objetivo, condição de vitória, limite de rodadas, enfermaria e política de mortes. As condições são objetivos, eliminação, rendição e tempo; o painel registra o placar e as mortes. Iniciar a luta fecha apostas e marca o evento como em andamento. Quando a equipe alcança o alvo por objetivo ou eliminação, a vitória e os pagamentos são lançados; rendição, tempo e qualquer decisão narrativa podem ser fechados pelos botões de resultado. A anulação devolve todas as entradas.
+
+Crie equipes antes da batalha e inscreva Actors existentes no mundo. A inscrição registra o membro no Teatro e salva a tag `quedaco-teatro.competitor` no Actor com equipe, papel e data; ela não altera ficha, poderes, itens, HP ou ownership. A criação de fichas de NPC e o conjunto de competidores prontos serão a próxima parte do módulo.
+
+Apenas o mestre registra apostas nesta versão. As cotações são decimais: apostar 100 a 1,75 retorna 175 no total se vencer. A cotação fica congelada no bilhete. Cadastre apostadores da plateia com origem, objetivo, perfil, caixa e dívida para criar conversa, suspeita e ganchos de contrato; o caixa do apostador diminui ao entrar e recebe o retorno na liquidação. Pode vincular o registro a um Actor, mas o módulo não transfere moedas nem itens entre fichas.
 
 Equipes têm fama e patrocinador privado; somente nome e fama são publicados quando autorizados. Contratos guardam parte, condições e dívida, com registro de encerramento. Quitação não altera automaticamente caixa ou dívida nas fichas. Incidentes usam rolagem local do Foundry, sem mensagem pública de chat.
 

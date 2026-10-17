@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {CATALOG} from '../src/catalog.mjs';
-import {ID,initialState,publicState,addEvent,placeBet,settleEvent} from '../src/model.mjs';
+import {ID,initialState,publicState,addBettor,addEvent,placeBet,recordBattle,settleEvent,startBattle} from '../src/model.mjs';
 import {createStore} from '../src/store.mjs';
 import {renderView} from '../src/view.mjs';
 const fixture=()=>{
@@ -40,6 +40,23 @@ test('anulação devolve apostas; entradas inválidas não alteram caixa',()=>{
   s.events[0].status='closed';
   assert.throws(()=>placeBet(s,{eventId:'ev',bettor:'A',side:0,stake:10}));
   settleEvent(s,'ev','void');assert.equal(s.treasury,0);assert.equal(s.bets[0].status,'refunded');
+});
+test('batalha de equipes encerra apostas no início e liquida ao atingir o objetivo',()=>{
+  const s=initialState(CATALOG);
+  addEvent(s,{name:'Areia contra Sangue',game:'Batalha de Equipes',a:'Areia',b:'Sangue',oddsA:2,oddsB:2,format:'3 contra 3',condition:'objetivos',target:2,deaths:'permitida',roundLimit:6},'battle');
+  placeBet(s,{eventId:'battle',bettor:'Torcida',side:0,stake:10});
+  startBattle(s,'battle');
+  assert.equal(s.events[0].status,'live');
+  assert.throws(()=>placeBet(s,{eventId:'battle',bettor:'Atrasado',side:1,stake:1}),/encerradas/);
+  recordBattle(s,'battle',0,'point');assert.equal(s.events[0].battle.score[0],1);
+  recordBattle(s,'battle',0,'point');
+  assert.equal(s.events[0].status,'settled');assert.equal(s.events[0].winner,0);assert.equal(s.bets[0].payout,20);
+});
+test('apostador cadastrado precisa ter caixa e recebe o retorno no próprio registro',()=>{
+  const s=initialState(CATALOG);event(s);addBettor(s,{name:'Lume',origin:'Mirmir',purpose:'Pagar a caravana',style:'Prudente',bankroll:25,debt:5},'lume');
+  placeBet(s,{eventId:'ev',bettorId:'lume',side:1,stake:20});assert.equal(s.bettors[0].bankroll,5);
+  assert.throws(()=>placeBet(s,{eventId:'ev',bettorId:'lume',side:0,stake:6}),/fichas suficientes/);
+  settleEvent(s,'ev',1);assert.equal(s.bettors[0].bankroll,49);
 });
 test('publicar é explícito, persiste e retirada limpa a cópia pública',async()=>{
   const {store,game}=fixture();await store.initialize();await store.initialize();assert.equal(game.journal.length,1);
