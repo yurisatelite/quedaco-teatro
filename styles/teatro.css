@@ -35,6 +35,7 @@
   .qt-metrics small { font:10px var(--font-sans,sans-serif); letter-spacing:1px; }
   .qt-metrics strong { display:block; margin-top:8px; font-size:20px; }
   .qt-card { border:1px solid var(--qt-line); background:var(--qt-panel); padding:20px; margin:12px 0; overflow-wrap:anywhere; }
+  .qt-arena-preview { display:block; width:min(100%,460px); max-height:210px; object-fit:cover; object-position:center; border:1px solid var(--qt-gold); margin:0 0 16px; background:var(--qt-bg); }
   .qt-card>small { font:11px var(--font-sans,sans-serif); letter-spacing:.6px; }
   .qt-card details { border-left:3px solid var(--qt-red); padding:12px; background:var(--qt-bg); margin:16px 0; }
   .qt-card summary { cursor:pointer; color:var(--qt-gold); }

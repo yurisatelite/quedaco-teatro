@@ -8,7 +8,7 @@ export function createTheatreApp(store) {
       const gm=game.user.isGM, published=store.published();
       const source=gm?store.read():null;
       this.revision=source?.revision;
-      const actors=gm&&!this.preview?Array.from(game.actors ?? []).map(actor=>({id:actor.id,name:actor.name,type:actor.type})).sort((a,b)=>a.name.localeCompare(b.name,'pt-BR')):[];
+      const actors=gm&&!this.preview?Array.from(game.actors ?? []).map(actor=>({id:actor.id,name:actor.name,type:actor.type,player:Boolean(actor.hasPlayerOwner)})).sort((a,b)=>a.name.localeCompare(b.name,'pt-BR')):[];
       return renderView({state:gm?(this.preview?publicState(source):source):published,gm,preview:this.preview,tab:this.tab,category:this.category,query:this.query,notice:this.notice,published,actors});
     }
     _replaceHTML(result,content) {content.innerHTML=result;}
@@ -70,7 +70,21 @@ export function createTheatreApp(store) {
             if(!yes)return;
             await store.mutate(s=>settleEvent(s,id,winner),this.revision);
           }else if(action==='start-battle') {
+            const event=store.read().events.find(row=>row.id===id);
+            if(!event?.battle?.sceneId)throw Error('Prepare a arena e a escalação antes de iniciar a batalha.');
+            const {openArena}=await import('./arena.mjs');await openArena(event.battle.sceneId,{game});
             await store.mutate(s=>startBattle(s,id),this.revision);
+          }else if(action==='prepare-arena') {
+            const state=store.read(),event=state.events.find(row=>row.id===id);
+            if(!event)throw Error('Batalha indisponível.');
+            const {prepareArena}=await import('./arena.mjs');
+            this.notice='Montando cena, Tokens e iniciativa da Batalha de Equipes.';await this.render({force:true});
+            const result=await prepareArena(event,state,{game});
+            await store.mutate(s=>{const row=s.events.find(item=>item.id===id);Object.assign(row.battle,{...result,phase:'prepared'});},state.revision);
+            this.notice='Arena pronta: 6 Tokens posicionados e iniciativa rolada. Revise a cena e inicie quando quiser.';
+          }else if(action==='open-arena') {
+            const event=store.read().events.find(row=>row.id===id);
+            const {openArena}=await import('./arena.mjs');await openArena(event?.battle?.sceneId,{game});
           }else if(action==='battle-point'||action==='battle-death') {
             await store.mutate(s=>recordBattle(s,id,target.dataset.side,action==='battle-point'?'point':'death'),this.revision);
           }else if(action==='incident') {
@@ -111,7 +125,8 @@ export function createTheatreApp(store) {
     async submit(form) {
       this.requireGM();if(this.busy)return;this.busy=true;
       try {
-        const values=Object.fromEntries(new FormData(form)), action=form.dataset.qtForm;
+        const data=new FormData(form),values=Object.fromEntries(data), action=form.dataset.qtForm;
+        values.side0ActorIds=data.getAll('side0ActorIds');values.side1ActorIds=data.getAll('side1ActorIds');
         await store.mutate(async s=>{
           if(action==='event') {
             const teamA=s.teams.find(t=>t.id===values.teamA),teamB=s.teams.find(t=>t.id===values.teamB);

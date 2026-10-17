@@ -1,6 +1,6 @@
 # QUEDAÇO - O Teatro dos Condenados
 
-Versão 0.4.0 para Foundry VTT 13, baseada na instalação local 13.351. Conteúdo autoral de campanha situado em Kravokia e no Deserto de Mirmir, para uso com Skyfall RPG. Personagens, instituições, provas e mistérios são propostas da campanha, não afirmações de cânone. Não inclui texto de livros ou fichas oficiais.
+Versão 0.5.0 para Foundry VTT 13, baseada na instalação local 13.351. Conteúdo autoral de campanha situado em Kravokia e no Deserto de Mirmir, para uso com Skyfall RPG. Personagens, instituições, provas e mistérios são propostas da campanha, não afirmações de cânone. Não inclui texto de livros ou fichas oficiais.
 
 ## Instalação e abertura
 
@@ -18,7 +18,9 @@ Escolha quais registros incluir usando “Incluir na próxima publicação”. E
 
 ## Batalha de equipes e apostas
 
-Batalha de Equipes é a primeira modalidade implementada a fundo. Ao programá-la, defina formato, terreno, objetivo, condição de vitória, limite de rodadas, enfermaria e política de mortes. As condições são objetivos, eliminação, rendição e tempo; o painel registra o placar e as mortes. Iniciar a luta fecha apostas e marca o evento como em andamento. Quando a equipe alcança o alvo por objetivo ou eliminação, a vitória e os pagamentos são lançados; rendição, tempo e qualquer decisão narrativa podem ser fechados pelos botões de resultado. A anulação devolve todas as entradas.
+Batalha de Equipes é a primeira modalidade implementada a fundo. Ao programá-la, defina formato, terreno, objetivo, condição de vitória, limite de rodadas, enfermaria e política de mortes. Escale três Actors por lado; podem ser competidores do Teatro, NPCs externos ou personagens de jogadores. Se não escolher Actors e as equipes tiverem integrantes vinculados, os três primeiros de cada uma serão usados. As condições são objetivos, eliminação, rendição e tempo; o painel registra o placar e as mortes. Iniciar a luta fecha apostas e marca o evento como em andamento. Quando a equipe alcança o alvo por objetivo ou eliminação, a vitória e os pagamentos são lançados; rendição, tempo e qualquer decisão narrativa podem ser fechados pelos botões de resultado. A anulação devolve todas as entradas.
+
+Cada card de Batalha de Equipes exibe a miniatura da **Areia da Prova**, uma arena original 30×20 do Deserto de Mirmir incluída no módulo. Use **Montar arena, Tokens e iniciativa**: o módulo cria ou reutiliza uma Cena privada, coloca cada lado nas três entradas oeste/leste, monta um Combate apenas para aquela prova e rola a iniciativa. O botão **Abrir mapa da prova** leva a Mestra à Cena para ajustar livremente Tokens, paredes ou cenário antes de começar. **Reconstruir escalação nas zonas** remove apenas os Tokens e o Combate pertencentes àquela prova, reposiciona os seis selecionados e rola uma iniciativa nova.
 
 Crie equipes antes da batalha e inscreva Actors existentes no mundo. A inscrição registra o membro no Teatro e salva a tag `quedaco-teatro.competitor` no Actor com equipe, papel e data; ela não altera ficha, poderes, itens, HP ou ownership.
 
@@ -46,4 +48,4 @@ Funciona sem outros módulos. Publica o descritor `family: 'quedaco'`, `contract
 
 `npm test` verifica projeções, permissões, finanças, publicação e revisões em um host simulado. `npm run test:ui` usa o Playwright já instalado em `../quedaco-campanhas`, com Edge, para testar o app real em uma simulação de Foundry e gerar capturas em output. `npm run package` gera o ZIP. Teste integrado com mestre e jogador em um mundo real ainda é necessário; o manifesto não declara uma geração como verified antes disso.
 
-A versão inicial não cria mapas de combate, Actors, compêndios, tabelas oficiais ou torneios automatizados. As modalidades têm regras narrativas e orientações; o combate usa o sistema do mundo. O objetivo desta entrega é uma direção utilizável e um cartaz compartilhável sobre os quais ampliar o módulo.
+Além da Areia da Prova e dos Actors do Circuito, o módulo ainda não cria compêndios, tabelas oficiais ou torneios automatizados. As próximas modalidades poderão reutilizar o mesmo padrão de Cena, escalação, zonas de entrada, Tokens e Combate; o combate continua usando as regras nativas do sistema Skyfall.

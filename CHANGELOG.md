@@ -1,3 +1,9 @@
+# 0.5.0
+
+- Batalha de Equipes agora monta a **Areia da Prova**, uma Cena 30×20 com miniatura, seis zonas de entrada e arte original incluída no módulo.
+- A Mestra escala exatamente três Actors por lado (NPCs ou personagens jogadores); o painel cria/reconstrói somente os Tokens da prova, os posiciona nas zonas e rola a iniciativa no Combate correspondente.
+- Novos controles para abrir o mapa, reconstruir a escalação e abrir/iniciar a prova sem perder a ligação entre apostas, placar e cena.
+
 # 0.4.0
 
 - O Circuito Inicial agora traz 40 modelos de NPC detalhados: 16 competidores, 16 apostadores e oito pessoas de bastidor, cada qual com objetivo, receio, segredo, rotina, itens narrativos, dinheiro e gancho de cena.

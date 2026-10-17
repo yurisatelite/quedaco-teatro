@@ -15,16 +15,16 @@ export function required(value) {
   return text;
 }
 export function initialState(catalog) {
-  return {schema:2, revision:0, announcement:'As portas do Teatro dos Condenados estão abertas. Nas areias de Kravokia, a próxima lenda pode ser você.', currency:'fichas', crowd:1200, mood:'Expectativa', treasury:0, notes:'', incident:'', entries:clone(catalog), events:[], bets:[], teams:[], bettors:[], personnel:[], contracts:[], rosterInstalled:false};
+  return {schema:3, revision:0, announcement:'As portas do Teatro dos Condenados estão abertas. Nas areias de Kravokia, a próxima lenda pode ser você.', currency:'fichas', crowd:1200, mood:'Expectativa', treasury:0, notes:'', incident:'', entries:clone(catalog), events:[], bets:[], teams:[], bettors:[], personnel:[], contracts:[], rosterInstalled:false};
 }
 export function normalizeState(state) {
   state.schema ??= 1; state.events ??= []; state.bets ??= []; state.teams ??= []; state.bettors ??= []; state.personnel ??= []; state.contracts ??= []; state.rosterInstalled ??= false;
   for (const team of state.teams) { team.members ??= []; team.visible ??= false; team.fame ??= 0; team.sponsor ??= ''; }
   for (const event of state.events) {
     event.status ??= 'open'; event.visible ??= true; event.winner ??= null;
-    if (event.game === 'Batalha de Equipes') event.battle ??= battleSetup({});
+    if (event.game === 'Batalha de Equipes') {event.battle ??= battleSetup({});event.battle.participants ??=[[],[]];event.battle.sceneId ??='';event.battle.combatId ??='';event.battle.mapId ??='areia-prova';}
   }
-  state.schema = 2; return state;
+  state.schema = 3; return state;
 }
 // Explicit allowlist: never spread private records into public documents.
 export function publicState(state) {
@@ -43,7 +43,8 @@ export function battleSetup(input) {
   const deaths = deathPolicies.has(input.deaths) ? input.deaths : 'permitida';
   const target = amount(input.target ?? 3, 1);
   if (!Number.isInteger(target) || target > 20) throw Error('O alvo da batalha deve ser um inteiro entre 1 e 20.');
-  return {format:required(input.format || '3 contra 3'),condition,deaths,target,roundLimit:amount(input.roundLimit ?? 6, 1),medics:input.medics !== 'no',rules:String(input.rules ?? ''),score:[0,0],deathsCount:[0,0],phase:'scheduled',log:[]};
+  const participants=[0,1].map(side=>Array.from(input[`side${side}ActorIds`]??[]).map(String).filter(Boolean).slice(0,3));
+  return {format:required(input.format || '3 contra 3'),condition,deaths,target,roundLimit:amount(input.roundLimit ?? 6, 1),medics:input.medics !== 'no',rules:String(input.rules ?? ''),score:[0,0],deathsCount:[0,0],phase:'scheduled',log:[],participants,sceneId:'',combatId:'',mapId:'areia-prova'};
 }
 export function publicBattle(battle) { return {format:battle.format,condition:battle.condition,deaths:battle.deaths,target:battle.target,roundLimit:battle.roundLimit,medics:battle.medics,score:[...battle.score],deathsCount:[...battle.deathsCount],phase:battle.phase}; }
 export function addEvent(state, input, id = uid()) {

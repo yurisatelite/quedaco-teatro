@@ -5,6 +5,7 @@ import {ID,initialState,publicState,addBettor,addEvent,placeBet,recordBattle,set
 import {createStore} from '../src/store.mjs';
 import {renderView} from '../src/view.mjs';
 import {CIRCUIT_BETTORS,CIRCUIT_NPCS,CIRCUIT_PERSONNEL,CIRCUIT_TEAMS,applyCircuitActorLinks,createCircuitActors,installCircuit,synchronizeCircuitCompetitorTags} from '../src/roster.mjs';
+import {ARENA_MAP,prepareArena,resolveParticipants} from '../src/arena.mjs';
 const fixture=()=>{
   const game={user:{isGM:true},journal:[]};
   const create=async record=>{
@@ -83,6 +84,17 @@ test('modelos do circuito são detalhados, estáveis e a sincronização não du
   assert.equal(s.bettors.filter(row=>row.actorId).length,16);assert.equal(s.personnel.filter(row=>row.actorId).length,8);
   await synchronizeCircuitCompetitorTags(s,{game:{actors:{get:id=>actors.find(actor=>actor.id===id)}}});
   assert.ok(actors.filter(actor=>actor.flags['quedaco-teatro']?.competitor?.teamId).length===16);
+});
+test('arena cria Cena, seis Tokens nas zonas, Combate e iniciativa sem aceitar escalação inválida',async()=>{
+  const s=initialState(CATALOG);const actors=Array.from({length:6},(_,index)=>({id:`actor-${index}`,name:`Actor ${index}`,prototypeToken:{toObject:()=>({name:`Actor ${index}`})},async getTokenDocument(data){return {toObject:()=>({name:this.name,...data})};}}));
+  addEvent(s,{name:'Prova da Areia',a:'Lado A',b:'Lado B',oddsA:2,oddsB:2,game:'Batalha de Equipes',format:'3 contra 3',side0ActorIds:actors.slice(0,3).map(actor=>actor.id),side1ActorIds:actors.slice(3).map(actor=>actor.id)},'arena');
+  assert.equal(resolveParticipants(s.events[0],s,actors).flat().length,6);
+  const scene={id:'scene-1',tokens:[],async createEmbeddedDocuments(type,sources){assert.equal(type,'Token');this.tokens=sources.map((source,index)=>({id:`token-${index}`,...source}));return this.tokens;},async deleteEmbeddedDocuments(){}};
+  const combat={id:'combat-1',async createEmbeddedDocuments(type,sources){assert.equal(type,'Combatant');return sources.map((source,index)=>({id:`combatant-${index}`,...source}));},async rollInitiative(ids){this.initiative=ids;}};
+  const result=await prepareArena(s.events[0],s,{game:{user:{isGM:true},actors,scenes:[],combats:[]},SceneClass:{async create(source){assert.equal(source.background.src,ARENA_MAP.src);assert.equal(source.width,3000);return scene;}},CombatClass:{async create(source){assert.equal(source.scene,scene.id);return combat;}}});
+  assert.equal(result.sceneId,scene.id);assert.equal(result.combatId,combat.id);assert.equal(scene.tokens.length,6);assert.deepEqual(scene.tokens.slice(0,3).map(token=>token.x),[200,200,200]);assert.deepEqual(scene.tokens.slice(3).map(token=>token.x),[2700,2700,2700]);assert.equal(combat.initiative.length,6);
+  s.events[0].battle.participants=[actors.slice(0,3).map(actor=>actor.id),[actors[0].id,...actors.slice(4).map(actor=>actor.id)]];
+  assert.throws(()=>resolveParticipants(s.events[0],s,actors),/dois lados/);
 });
 test('publicar é explícito, persiste e retirada limpa a cópia pública',async()=>{
   const {store,game}=fixture();await store.initialize();await store.initialize();assert.equal(game.journal.length,1);
