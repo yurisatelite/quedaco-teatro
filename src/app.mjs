@@ -77,6 +77,10 @@ export function createTheatreApp(store) {
             const {INCIDENTS}=await import('./catalog.mjs');
             const roll=await new foundry.dice.Roll(`1d${INCIDENTS.length}`).evaluate();
             await store.mutate(s=>{s.incident=INCIDENTS[roll.total-1];},this.revision);
+          }else if(action==='install-roster') {
+            const {installCircuit}=await import('./roster.mjs');
+            await store.mutate(s=>installCircuit(s),this.revision);
+            this.notice='Circuito inicial instalado: 4 equipes, 16 apostadores e 8 pessoas de bastidor.';
           }else {
             await store.mutate(s=>{
               if(action==='reveal'){const row=s.entries.find(r=>r.id===id);if(row)row.revealed=!row.revealed;}

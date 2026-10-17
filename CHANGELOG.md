@@ -1,3 +1,9 @@
+# 0.3.0
+
+- Adicionado Circuito Inicial: quatro equipes, 16 competidores, 16 apostadores e oito pessoas de bastidor.
+- Novo painel Elenco para instalar e consultar o circuito sem criar fichas genéricas antes do modelo do Criador de Personagens.
+- Registros de competidores incluem estilo, origem e gancho; apostadores incluem caixa, dívida e motivação; bastidores incluem segredos de condução.
+
 # 0.2.0
 
 - A Batalha de Equipes ganhou formato, condição de vitória, alvo, rodadas, mortes, enfermaria, placar e andamento ao vivo.

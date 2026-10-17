@@ -15,10 +15,10 @@ export function required(value) {
   return text;
 }
 export function initialState(catalog) {
-  return {schema:2, revision:0, announcement:'As portas do Teatro dos Condenados estão abertas. Nas areias de Kravokia, a próxima lenda pode ser você.', currency:'fichas', crowd:1200, mood:'Expectativa', treasury:0, notes:'', incident:'', entries:clone(catalog), events:[], bets:[], teams:[], bettors:[], contracts:[]};
+  return {schema:2, revision:0, announcement:'As portas do Teatro dos Condenados estão abertas. Nas areias de Kravokia, a próxima lenda pode ser você.', currency:'fichas', crowd:1200, mood:'Expectativa', treasury:0, notes:'', incident:'', entries:clone(catalog), events:[], bets:[], teams:[], bettors:[], personnel:[], contracts:[], rosterInstalled:false};
 }
 export function normalizeState(state) {
-  state.schema ??= 1; state.events ??= []; state.bets ??= []; state.teams ??= []; state.bettors ??= []; state.contracts ??= [];
+  state.schema ??= 1; state.events ??= []; state.bets ??= []; state.teams ??= []; state.bettors ??= []; state.personnel ??= []; state.contracts ??= []; state.rosterInstalled ??= false;
   for (const team of state.teams) { team.members ??= []; team.visible ??= false; team.fame ??= 0; team.sponsor ??= ''; }
   for (const event of state.events) {
     event.status ??= 'open'; event.visible ??= true; event.winner ??= null;

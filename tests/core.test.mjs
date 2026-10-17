@@ -4,6 +4,7 @@ import {CATALOG} from '../src/catalog.mjs';
 import {ID,initialState,publicState,addBettor,addEvent,placeBet,recordBattle,settleEvent,startBattle} from '../src/model.mjs';
 import {createStore} from '../src/store.mjs';
 import {renderView} from '../src/view.mjs';
+import {CIRCUIT_BETTORS,CIRCUIT_PERSONNEL,CIRCUIT_TEAMS,installCircuit} from '../src/roster.mjs';
 const fixture=()=>{
   const game={user:{isGM:true},journal:[]};
   const create=async record=>{
@@ -57,6 +58,13 @@ test('apostador cadastrado precisa ter caixa e recebe o retorno no próprio regi
   placeBet(s,{eventId:'ev',bettorId:'lume',side:1,stake:20});assert.equal(s.bettors[0].bankroll,5);
   assert.throws(()=>placeBet(s,{eventId:'ev',bettorId:'lume',side:0,stake:6}),/fichas suficientes/);
   settleEvent(s,'ev',1);assert.equal(s.bettors[0].bankroll,49);
+});
+test('circuito inicial cria equipes, elenco, apostadores e não pode ser duplicado',()=>{
+  const s=initialState(CATALOG);installCircuit(s);
+  assert.equal(s.teams.length,CIRCUIT_TEAMS.length);assert.equal(s.bettors.length,CIRCUIT_BETTORS.length);assert.equal(s.personnel.length,CIRCUIT_PERSONNEL.length);
+  assert.equal(s.teams.flatMap(t=>t.members).length,16);
+  assert.throws(()=>installCircuit(s),/já foi instalado/);
+  assert.doesNotMatch(JSON.stringify(publicState(s)),/Cinta Negra|Mão de Cobre|Hedra Pálida/);
 });
 test('publicar é explícito, persiste e retirada limpa a cópia pública',async()=>{
   const {store,game}=fixture();await store.initialize();await store.initialize();assert.equal(game.journal.length,1);
