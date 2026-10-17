@@ -1,6 +1,6 @@
 # QUEDAÇO - O Teatro dos Condenados
 
-Versão 0.3.0 para Foundry VTT 13, baseada na instalação local 13.351. Conteúdo autoral de campanha situado em Kravokia e no Deserto de Mirmir, para uso com Skyfall RPG. Personagens, instituições, provas e mistérios são propostas da campanha, não afirmações de cânone. Não inclui texto de livros ou fichas oficiais.
+Versão 0.4.0 para Foundry VTT 13, baseada na instalação local 13.351. Conteúdo autoral de campanha situado em Kravokia e no Deserto de Mirmir, para uso com Skyfall RPG. Personagens, instituições, provas e mistérios são propostas da campanha, não afirmações de cânone. Não inclui texto de livros ou fichas oficiais.
 
 ## Instalação e abertura
 
@@ -20,11 +20,13 @@ Escolha quais registros incluir usando “Incluir na próxima publicação”. E
 
 Batalha de Equipes é a primeira modalidade implementada a fundo. Ao programá-la, defina formato, terreno, objetivo, condição de vitória, limite de rodadas, enfermaria e política de mortes. As condições são objetivos, eliminação, rendição e tempo; o painel registra o placar e as mortes. Iniciar a luta fecha apostas e marca o evento como em andamento. Quando a equipe alcança o alvo por objetivo ou eliminação, a vitória e os pagamentos são lançados; rendição, tempo e qualquer decisão narrativa podem ser fechados pelos botões de resultado. A anulação devolve todas as entradas.
 
-Crie equipes antes da batalha e inscreva Actors existentes no mundo. A inscrição registra o membro no Teatro e salva a tag `quedaco-teatro.competitor` no Actor com equipe, papel e data; ela não altera ficha, poderes, itens, HP ou ownership. A criação de fichas de NPC e o conjunto de competidores prontos serão a próxima parte do módulo.
+Crie equipes antes da batalha e inscreva Actors existentes no mundo. A inscrição registra o membro no Teatro e salva a tag `quedaco-teatro.competitor` no Actor com equipe, papel e data; ela não altera ficha, poderes, itens, HP ou ownership.
 
 ## Circuito inicial e futuras fichas
 
-Na aba **Elenco**, a Mestra instala uma vez o Circuito Inicial: Dunas de Vidro, Filhos do Atoleiro, Lâminas do Crepúsculo e Quebravento, cada uma com quatro competidores e estilo próprio; há ainda 16 apostadores e oito pessoas de bastidor. Todo registro traz origem, interesse, recursos e gancho de cena. A instalação não gera Actors incompletos: ela prepara os dados para vincular ou criar fichas quando o modelo do Criador de Personagens estiver definido. A lista é autoral e pode ser alterada na campanha.
+Na aba **Elenco**, a Mestra instala uma vez o Circuito Inicial: Dunas de Vidro, Filhos do Atoleiro, Lâminas do Crepúsculo e Quebravento, cada uma com quatro competidores e estilo próprio; há ainda 16 apostadores e oito pessoas de bastidor. Todo registro possui origem, objetivo, receio, segredo, rotina, itens narrativos, dinheiro e gancho de cena.
+
+Com **QUEDAÇO - Personagens Skyfall RPG** instalado e ativo, use **Criar / sincronizar fichas do elenco**. O Teatro entrega os 40 modelos à API do Criador; ela confere todos os compêndios da mesa em prévias assinadas antes de começar a gravar Actors nativos. Cada Actor recebe `quedaco-teatro.npc`; os 16 competidores recebem também `quedaco-teatro.competitor`. Um segundo uso não duplica modelos já criados e restaura os vínculos com equipe, apostador ou bastidor. Se a criação em si falhar depois de alguma ficha, o Criador preserva a ficha pendente para revisão e informa o erro — nunca apaga ou recria Actors automaticamente.
 
 Apenas o mestre registra apostas nesta versão. As cotações são decimais: apostar 100 a 1,75 retorna 175 no total se vencer. A cotação fica congelada no bilhete. Cadastre apostadores da plateia com origem, objetivo, perfil, caixa e dívida para criar conversa, suspeita e ganchos de contrato; o caixa do apostador diminui ao entrar e recebe o retorno na liquidação. Pode vincular o registro a um Actor, mas o módulo não transfere moedas nem itens entre fichas.
 

@@ -1,3 +1,9 @@
+# 0.4.0
+
+- O Circuito Inicial agora traz 40 modelos de NPC detalhados: 16 competidores, 16 apostadores e oito pessoas de bastidor, cada qual com objetivo, receio, segredo, rotina, itens narrativos, dinheiro e gancho de cena.
+- A aba Elenco usa a API oficial de **QUEDAÇO - Personagens Skyfall RPG** para pré-validar e criar Actors nativos do sistema Skyfall; fichas existentes pelo mesmo modelo são reaproveitadas, nunca duplicadas.
+- As fichas recebem as tags `quedaco-teatro.npc` e, para competidores, `quedaco-teatro.competitor`; os vínculos voltam automaticamente para equipes, apostadores e bastidores.
+
 # 0.3.0
 
 - Adicionado Circuito Inicial: quatro equipes, 16 competidores, 16 apostadores e oito pessoas de bastidor.

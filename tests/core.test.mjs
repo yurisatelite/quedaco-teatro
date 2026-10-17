@@ -4,7 +4,7 @@ import {CATALOG} from '../src/catalog.mjs';
 import {ID,initialState,publicState,addBettor,addEvent,placeBet,recordBattle,settleEvent,startBattle} from '../src/model.mjs';
 import {createStore} from '../src/store.mjs';
 import {renderView} from '../src/view.mjs';
-import {CIRCUIT_BETTORS,CIRCUIT_PERSONNEL,CIRCUIT_TEAMS,installCircuit} from '../src/roster.mjs';
+import {CIRCUIT_BETTORS,CIRCUIT_NPCS,CIRCUIT_PERSONNEL,CIRCUIT_TEAMS,applyCircuitActorLinks,createCircuitActors,installCircuit,synchronizeCircuitCompetitorTags} from '../src/roster.mjs';
 const fixture=()=>{
   const game={user:{isGM:true},journal:[]};
   const create=async record=>{
@@ -65,6 +65,24 @@ test('circuito inicial cria equipes, elenco, apostadores e não pode ser duplica
   assert.equal(s.teams.flatMap(t=>t.members).length,16);
   assert.throws(()=>installCircuit(s),/já foi instalado/);
   assert.doesNotMatch(JSON.stringify(publicState(s)),/Cinta Negra|Mão de Cobre|Hedra Pálida/);
+});
+test('modelos do circuito são detalhados, estáveis e a sincronização não duplica Actors',async()=>{
+  assert.equal(CIRCUIT_NPCS.length,40);
+  assert.equal(new Set(CIRCUIT_NPCS.map(row=>row.model.id)).size,40);
+  for(const row of CIRCUIT_NPCS){
+    assert.match(row.model.appearance,/./);assert.match(row.model.routine,/./);assert.match(row.model.desire,/./);assert.ok(row.model.possessions.length>=3);
+  }
+  const actors=CIRCUIT_NPCS.map((row,index)=>({id:`a${index}`,uuid:`Actor.a${index}`,flags:{},async setFlag(scope,key,value){this.flags[scope]??={};this.flags[scope][key]=value;}}));
+  const calls=[];
+  const creator={capabilities:{npcTemplates:true},async prepareNpcTemplate(model){return {signature:`sig:${model.id}`};},async createNpcFromTemplate(model,{expectedSignature}){calls.push([model.id,expectedSignature]);const index=CIRCUIT_NPCS.findIndex(row=>row.model.id===model.id);return {status:'existing',actorUuid:actors[index].uuid};}};
+  const result=await createCircuitActors(creator,{game:{actors}});
+  assert.equal(result.created,0);assert.equal(result.existing,40);assert.equal(calls.length,40);
+  assert.equal(actors.filter(actor=>actor.flags['quedaco-teatro']?.competitor).length,16);
+  const s=initialState(CATALOG);installCircuit(s);applyCircuitActorLinks(s,result.linked);
+  assert.equal(s.teams.flatMap(team=>team.members).filter(member=>member.actorId).length,16);
+  assert.equal(s.bettors.filter(row=>row.actorId).length,16);assert.equal(s.personnel.filter(row=>row.actorId).length,8);
+  await synchronizeCircuitCompetitorTags(s,{game:{actors:{get:id=>actors.find(actor=>actor.id===id)}}});
+  assert.ok(actors.filter(actor=>actor.flags['quedaco-teatro']?.competitor?.teamId).length===16);
 });
 test('publicar é explícito, persiste e retirada limpa a cópia pública',async()=>{
   const {store,game}=fixture();await store.initialize();await store.initialize();assert.equal(game.journal.length,1);

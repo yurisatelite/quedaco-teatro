@@ -1,7 +1,11 @@
 import {clone, uid} from './model.mjs';
 
-// Conteúdo autoral pronto para mesa. As fichas completas serão geradas pelo
-// Criador de Personagens quando o modelo de importação for fornecido.
+export const CREATOR_ID='quedaco-personagens-skyfall-rpg';
+const slug=value=>String(value).normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/(^-|-$)/g,'');
+export const npcKey=name=>slug(name);
+
+// Conteúdo autoral pronto para mesa. As fichas são geradas pelo Criador de
+// Personagens usando os nomes reais dos compêndios e o contrato QUEDAÇO v1.
 export const CIRCUIT_TEAMS = [
   {name:'Dunas de Vidro',sponsor:'Casa Ravel',fame:7,visible:true,identity:'Equipe técnica e metódica. Vence por controle de espaço, escudo e objetivo.',members:[
     ['Vayla Norem','Capitã / escudo','Ex-guarda de caravana; luta para comprar a liberdade da irmã.'],
@@ -55,9 +59,121 @@ export const CIRCUIT_PERSONNEL = [
   ['Pai Fósforo','Porteiro de túneis','Controla quem chega aos vestiários e à enfermaria.','Perdeu um filho nas Ruínas Inferiores e nunca saiu de lá de verdade.']
 ];
 
+const PERSONNEL_PROPS={
+  'Rima de Sal':['livro-caixa dobrável, sinete de cera e três fichas de cortesia','Conta os apostadores pelo modo como seguram a caneca e guarda cópias de cada recibo.'],
+  'Bico de Ferro':['apito de aço, luvas de revista e placa de turno','Faz três voltas curtas pela arquibancada antes de abrir os portões e observa mais as mãos do que os rostos.'],
+  'Hedra Pálida':['estojo de pena, carvão de cópia e contratos em branco','Trabalha à luz baixa, lê cada cláusula em voz neutra e só então pergunta se alguém quer desistir.'],
+  'Santo Remendo':['bolsa de sutura, ataduras limpas e medalhão de enfermaria','Dorme em bancos perto da enfermaria e conhece a história de cada cicatriz que trata.'],
+  'Vigia Cacto':['chaves de curral, ração seca e sino de montaria','Chega antes do sol, conversa com as criaturas e nunca aceita que as chamem de equipamento.'],
+  'Duas Luzes':['duas lanternas coloridas, cartões de rumor e giz','Trocam sinais de luz durante a luta; uma anota boatos, a outra confere se alguém está plantando mentira.'],
+  'Cinta Negra':['pasta de cobrança, fita preta e recibos quitados','Visita devedores no começo da manhã, oferece uma saída possível e só ameaça quando já não há testemunhas.'],
+  'Pai Fósforo':['chaveiro de túneis, caixas de fósforo e mapa queimado','Acende uma chama em cada entrada antes do espetáculo e conversa com ausências como se ainda respondessem.']
+};
+
+const BETTOR_PROPS={
+  'Dona Belta':['chave da pensão, chaleira de cobre e caderneta de hóspedes','Fica perto das saídas, serve chá para ouvir conversas e só arrisca quando conhece a família do competidor.'],
+  'Nalo das Cordas':['rolo de corda fina, mapa de rotas e bilhetes de recado','Chega coberto de poeira, troca novidades por água e calcula a aposta como quem calcula uma travessia.'],
+  'Crisálida':['frasco lacrado, luvas de oficina e convite sem assinatura','Observa pulsos e pupilas mais do que a luta; nunca bebe o que manda os outros provarem.'],
+  'Dente Curto':['faixa de torcida, canivete sem fio e retrato do irmão','Grita demais, perde a conta das moedas e se torna perigoso quando alguém ri da derrota do irmão.'],
+  'Vó Piri':['bule de barro, sachês de erva e moedas separadas por pano','Monta a banca cedo, escuta sem interromper e identifica um blefe antes da primeira cotação.'],
+  'Isto Não É Meu Nome':['três documentos falsos, capa reversível e metade de um contrato','Muda de mesa toda rodada e escolhe lugares onde pode ver a porta e o caixa ao mesmo tempo.'],
+  'Galan Risco':['cartões perfurados, lente de aumento e retrato desbotado','Marca resultados em padrões obsessivos e interrompe a escrita apenas quando algum nome desaparecido é citado.'],
+  'Tia Nuvem':['cesta de remédios, manta de viagem e lista de compras','Está só de passagem, pergunta demais sobre preços e não percebe quando a torcida tenta puxá-la para uma briga.'],
+  'Par de Dados':['dois dados viciados, paletós combinando e livreto de boatos','Um conversa alto para formar plateia; o outro registra tudo e some antes de qualquer acerto.'],
+  'Sall Vinte':['fichário de dívidas, calculadora de contas e bebida barata','Conhece as taxas da Casa melhor que as próprias chances e fica pálido quando um cliente antigo se aproxima.'],
+  'Aru da Lama':['tambor de mão, tintas de rosto e saco de moedas pequenas','Transforma qualquer espera em música, torce por azarões e acaba sabendo de histórias que ninguém contou de propósito.'],
+  'Mestre Ovido':['luneta, cartões numerados e estojo de escrita','Anota cada repetição como experimento e trata uma vitória improvável como prova de que a memória pode ser torcida.'],
+  'Pequena Rima':['bolsa de mensageira, sandálias gastas e carta para o pai','Corre entre filas com recados, evita adultos que perguntam demais e só aposta quando acredita que ninguém verá.'],
+  'Coroa Sem Ouro':['máscara simples, anel de família e bolsa pesada','Prefere camarotes escuros, manda criados apostarem em seu lugar e mede prestígio como outros medem sangue.'],
+  'Teko Varmah':['odre de água, bússola de areia e mapa do acampamento','Confere o céu antes de escolher um palpite e abandona o Coliseu sem aviso se a rota de seu povo precisar dele.'],
+  'Mão de Cobre':['luvas manchadas, chave de duto e pacote embrulhado','Senta perto de passagens de serviço, fala baixo e reconhece guardas pela sola das botas.']
+};
+
+const COMPETITOR_PROPS={
+  'Vayla Norem':['escudo de treino marcado, retrato da irmã e cinto de guarda','Revisa a formação antes de cada entrada e conta vitórias como parcelas de uma libertação.'],
+  'Ponto-Seis':['bússola quebrada, lenço da Queda e fichas de fama','Chega cedo para medir vento e plateia; ri alto para não deixar ninguém perceber que teme sobreviver de novo.'],
+  'Mira Fio':['caderno de fórmulas, frascos vazios e pinça de cobre','Observa o alcance de todo golpe, registra desvios e trata a arena como laboratório com testemunhas demais.'],
+  'Gor Brasa':['luvas de pedreira, pedra lisa e porção extra de comida','Aquece em silêncio, carrega o peso dos colegas e odeia quando alguém chama sua gentileza de fraqueza.'],
+  'Tassi Uru':['mapa rasgado, anzóis de corda e medalha da família','Testa cada nó antes do combate e repete os caminhos do mapa de memória para não esquecer o que lhe tomaram.'],
+  'Lama':['faixas de agarramento, pedra de rio e prato de madeira','Fala pouco, come por último e se coloca entre o perigo e qualquer integrante que pareça jovem demais para estar ali.'],
+  'Eron Sopro':['tubo de mensagens, capa leve e moeda de fuga','Some pelos corredores depois das lutas, calcula rotas de saída e aposta no time como quem compra tempo.'],
+  'Kika Lodo':['bolsa médica, ervas secas e lista de pacientes','Confere a enfermaria antes de vestir as luvas; vence rápido porque toda demora custa alguém fora da arena.'],
+  'Soren Val':['lâmina cerimonial, brasão partido e luvas impecáveis','Ensaiou entradas para a nobreza, mas treina sozinho quando a oficina fecha e ninguém está aplaudindo.'],
+  'Nima Vanta':['luneta de mira, estojo de munição e emblema queimado','Conta passos e ângulos do alto, mantendo um olho no alvo e outro em quem pode ter sabotado seu passado.'],
+  'Rusk Oco':['prótese de manutenção, chave de ajuste e recibos da Oficina','Aperta parafusos antes da luta e guarda cada comprovante como prova de que ainda não pertence a ninguém.'],
+  'Eli Sombra':['corda escura, máscara lisa e bilhete codificado','Chega por rotas que ninguém vê, observa Soren mais que os adversários e evita responder perguntas sobre patrocinadores.'],
+  'Yori M’bo':['bússola de rota, odre compartilhado e lenço da caravana','Confere água e saídas antes de aceitar qualquer prova; sua capitânia começa protegendo quem não consegue correr.'],
+  'Ferro-Fino':['lança de treino, recibo dobrado e medalha de honestidade','Mantém distância precisa e paga uma pequena parte da dívida depois de cada luta, mesmo quando ninguém exige.'],
+  'Sia Duna':['gancho de escalada, fragmento de ruína e botas de corrida','Reconhece terreno como quem lê um mapa e pergunta demais sobre qualquer pedra que pareça antiga.'],
+  'Mauro Varmah':['foco de estudo, caderno queimado e carta recusada','Pratica gestos discretos nos túneis, olha por cima do ombro ao ouvir passos e recusa falar da proposta do laboratório.']
+};
+
+function template({key,name,job,appearance,clothes,behavior,voice,routine,desire,fear,secret,hook,tactics,possessions,cash,relations=[]}){
+  // Anuro/Bufonin, Combatente e Militar são entradas verificadas pelo Criador.
+  // A preparação ainda consulta os compêndios instalados antes de gravar a ficha.
+  return {id:`teatro:${key}`,name,level:1,cash,legacy:'Anuro',heritage:'Bufonin',characterClass:'Combatente',background:'Militar',attributes:{str:1,dex:1,con:1,int:0,wis:1,cha:0},inventory:[],possessions,skillPriority:['athletics','perception'],languagePriority:[],featPriority:[],relations,job,appearance,clothes,behavior,voice,routine,desire,fear,secret,hook,tactics};
+}
+
+/** Modelos detalhados, idempotentes e prontos para a API do Criador. */
+export const CIRCUIT_NPCS=Object.freeze([
+  ...CIRCUIT_TEAMS.flatMap(team=>team.members.map(([name,role,bio])=>{
+    const [possessions,routine]=COMPETITOR_PROPS[name];const key=npcKey(name);
+    return {key,kind:'competitor',teamName:team.name,role,model:template({key,name,job:`Competidor do Teatro · ${role}`,appearance:`Atleta de arena com marcas de areia e a postura de quem aprendeu a dormir em viagem. ${bio}`,clothes:`Uniforme de ${team.name}, adaptado sobre roupa de combate simples; cores do patrocinador ${team.sponsor}.`,behavior:'Disciplina o medo em trabalho de equipe e prefere uma vitória que deixe aliados vivos.',voice:'Fala direto, com frases curtas; a tensão aparece quando o assunto é dívida ou família.',routine,desire:bio,fear:'Ser transformado em espetáculo descartável pela Casa ou perder alguém por uma decisão tomada na arena.',secret:`${bio} Há uma segunda camada dessa urgência que o competidor só revela quando a confiança é merecida.`,hook:`Uma aposta, um contrato ou um rival pode pressionar ${name} antes da próxima luta.`,tactics:`${role}. Prioriza objetivos, cobertura e retirada de aliados; só aceita risco fatal se a regra da prova exigir.`,possessions,cash:35})};
+  })),
+  ...CIRCUIT_BETTORS.map(([name,origin,purpose,style,bankroll,debt,notes])=>{
+    const [possessions,routine]=BETTOR_PROPS[name];const key=npcKey(name);
+    return {key,kind:'bettor',style,bankroll,debt,model:template({key,name,job:`Apostador do Coliseu · perfil ${style}`,appearance:`Viajante de ${origin}; olhos treinados para a arena e para quem observa a arena. ${notes}`,clothes:'Roupas práticas para arquibancada e fuga rápida, com um detalhe discreto que denuncia a origem.',behavior:`${style}. ${debt?'Evita qualquer pergunta que possa revelar a dívida.':'Mantém o rosto calmo mesmo quando o caixa diminui.'}`,voice:'Fala baixo durante a cotação e mais rápido quando alguém oferece informação exclusiva.',routine,desire:purpose,fear:debt?`Que a cobrança de ${debt} T$ alcance o Coliseu antes de encontrar uma saída.`:'Perder o pouco controle que ainda possui sobre dinheiro e informação.',secret:`${notes}${debt?` A dívida registrada é de ${debt} T$ e pode ser usada como alavanca narrativa.`:''}`,hook:`Um resultado de Batalha de Equipes pode aproximar ${name} do objetivo ou forçá-lo a pedir ajuda aos personagens.`,tactics:'Evita combate; em perigo busca segurança, testemunhas e uma rota de fuga. Sabe usar rumores, favores e o próprio dinheiro como defesa.',possessions,cash:bankroll})};
+  }),
+  ...CIRCUIT_PERSONNEL.map(([name,role,publicText,secret])=>{
+    const [possessions,routine]=PERSONNEL_PROPS[name];const key=npcKey(name);
+    return {key,kind:'personnel',role,model:template({key,name,job:`Bastidores do Teatro · ${role}`,appearance:`Profissional do Coliseu que carrega o cansaço de muitos espetáculos. ${publicText}`,clothes:'Uniforme funcional do Teatro, remendado nos pontos de maior uso e sem insígnia que revele lealdade demais.',behavior:'Faz o trabalho com precisão; trata a crueldade da arena como problema logístico até que alguém cruza um limite.',voice:'Controlada e econômica, capaz de ficar gentil ou fria conforme o público exige.',routine,desire:'Manter sua posição no Teatro sem abandonar a própria linha moral.',fear:'Que um erro de bastidor vire uma morte que poderia ter sido evitada.',secret,hook:`Os personagens podem precisar de ${name} para atravessar uma porta, descobrir uma irregularidade ou proteger alguém do sistema do Coliseu.`,tactics:'Evita confronto aberto. Conhece passagens, horários e procedimentos do Coliseu; chama ajuda e protege civis antes de lutar.',possessions,cash:55})};
+  })
+]);
+
+export function circuitNpc(key){return CIRCUIT_NPCS.find(row=>row.key===key)??null;}
+
+/** Cria as fichas pela API oficial e devolve vínculos, sem tocar no estado do Teatro. */
+export async function createCircuitActors(creator,{game=globalThis.game,onProgress=()=>{}}={}){
+  if(!creator?.capabilities?.npcTemplates||typeof creator.prepareNpcTemplate!=='function'||typeof creator.createNpcFromTemplate!=='function')throw Error('Instale e ative QUEDAÇO - Personagens Skyfall RPG para criar as fichas do elenco.');
+  const previews=[];
+  for(const row of CIRCUIT_NPCS){
+    onProgress(row);
+    previews.push([row,await creator.prepareNpcTemplate(row.model)]);
+  }
+  const linked=[];let created=0,existing=0;
+  for(const [row,preview] of previews){
+    const result=await creator.createNpcFromTemplate(row.model,{expectedSignature:preview.signature});
+    const actor=await globalThis.fromUuid?.(result.actorUuid)??Array.from(game.actors??[]).find(candidate=>candidate.uuid===result.actorUuid);
+    if(!actor)throw Error(`${row.model.name}: a ficha foi criada, mas não pôde ser vinculada ao Teatro.`);
+    const tag={key:row.key,kind:row.kind,teamName:row.teamName??'',role:row.role??'',registeredAt:Date.now()};
+    await actor.setFlag?.('quedaco-teatro','npc',tag);
+    if(row.kind==='competitor')await actor.setFlag?.('quedaco-teatro','competitor',{teamName:row.teamName,role:row.role,registeredAt:tag.registeredAt});
+    linked.push({key:row.key,actorId:actor.id,actorUuid:actor.uuid});
+    if(result.status==='created')created++;else existing++;
+  }
+  return {created,existing,linked};
+}
+
+export function applyCircuitActorLinks(state,links){
+  const byKey=new Map(links.map(link=>[link.key,link]));
+  for(const team of state.teams)for(const member of team.members){const linked=byKey.get(npcKey(member.name));if(linked)member.actorId=linked.actorId;}
+  for(const bettor of state.bettors){const linked=byKey.get(npcKey(bettor.name));if(linked)bettor.actorId=linked.actorId;}
+  for(const person of state.personnel??[]){const linked=byKey.get(npcKey(person.name));if(linked)person.actorId=linked.actorId;}
+  return clone(state);
+}
+
+/** Completa a tag de competição com o ID da equipe criado no Journal do Teatro. */
+export async function synchronizeCircuitCompetitorTags(state,{game=globalThis.game}={}){
+  for(const team of state.teams)for(const member of team.members){
+    if(!member.actorId)continue;
+    const actor=game.actors?.get?.(member.actorId)??Array.from(game.actors??[]).find(candidate=>candidate.id===member.actorId);
+    if(actor)await actor.setFlag?.('quedaco-teatro','competitor',{teamId:team.id,teamName:team.name,role:member.role,registeredAt:Date.now()});
+  }
+}
+
 export function installCircuit(state) {
   if(state.rosterInstalled)throw Error('O circuito inicial já foi instalado neste Teatro.');
-  for(const source of CIRCUIT_TEAMS)state.teams.push({id:uid(),name:source.name,sponsor:source.sponsor,fame:source.fame,visible:source.visible,identity:source.identity,members:source.members.map(([name,role,bio])=>({actorId:'',name,role,bio}))});
+  for(const source of CIRCUIT_TEAMS)state.teams.push({id:uid(),name:source.name,sponsor:source.sponsor,fame:source.fame,visible:source.visible,identity:source.identity,members:source.members.map(([name,role,bio])=>({actorId:'',npcKey:npcKey(name),name,role,bio}))});
   for(const [name,origin,purpose,style,bankroll,debt,notes] of CIRCUIT_BETTORS)state.bettors.push({id:uid(),name,origin,purpose,style,bankroll,debt,actorId:'',notes});
   state.personnel ??=[];
   for(const [name,role,publicText,secret] of CIRCUIT_PERSONNEL)state.personnel.push({id:uid(),name,role,publicText,secret,actorId:''});

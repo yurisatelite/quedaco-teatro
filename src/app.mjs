@@ -81,6 +81,19 @@ export function createTheatreApp(store) {
             const {installCircuit}=await import('./roster.mjs');
             await store.mutate(s=>installCircuit(s),this.revision);
             this.notice='Circuito inicial instalado: 4 equipes, 16 apostadores e 8 pessoas de bastidor.';
+          }else if(action==='create-roster-actors') {
+            const {CREATOR_ID,createCircuitActors,applyCircuitActorLinks,synchronizeCircuitCompetitorTags}=await import('./roster.mjs');
+            const creator=game.modules?.get(CREATOR_ID)?.api;
+            const total=store.read().teams.reduce((count,team)=>count+team.members.length,0)+(store.read().bettors?.length??0)+(store.read().personnel?.length??0);
+            const yes=await foundry.applications.api.DialogV2.confirm({window:{title:'Criar fichas do elenco'},content:`<p>O Criador de Personagens vai pré-validar e criar ${total} Actors nativos de Skyfall.</p><p>Fichas já vinculadas pelo mesmo modelo não serão duplicadas. Cada ficha receberá a tag <code>quedaco-teatro.npc</code>.</p>`});
+            if(!yes)return;
+            this.notice='Criando fichas pelo Criador de Personagens; isto pode levar alguns instantes.';
+            await this.render({force:true});
+            const result=await createCircuitActors(creator,{game});
+            const current=store.read();
+            await store.mutate(s=>applyCircuitActorLinks(s,result.linked),current.revision);
+            await synchronizeCircuitCompetitorTags(store.read(),{game});
+            this.notice=`Elenco sincronizado: ${result.created} ficha(s) criada(s), ${result.existing} já existente(s).`;
           }else {
             await store.mutate(s=>{
               if(action==='reveal'){const row=s.entries.find(r=>r.id===id);if(row)row.revealed=!row.revealed;}
