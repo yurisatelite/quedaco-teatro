@@ -111,6 +111,8 @@ const COMPETITOR_PROPS={
 };
 
 function template({key,name,job,appearance,clothes,behavior,voice,routine,desire,fear,secret,hook,tactics,possessions,cash,relations=[]}){
+  // O contrato do Criador exige uma lista: biografia usa join e inventário itera cada pertence.
+  possessions=Array.isArray(possessions)?[...possessions]:String(possessions??'').split(/,\s*|\s+e\s+/).map(item=>item.trim()).filter(Boolean);
   // Anuro/Bufonin, Combatente e Militar são entradas verificadas pelo Criador.
   // A preparação ainda consulta os compêndios instalados antes de gravar a ficha.
   return {id:`teatro:${key}`,name,portrait:NPC_PORTRAIT,token:NPC_TOKEN,level:1,cash,legacy:'Anuro',heritage:'Bufonin',characterClass:'Combatente',background:'Militar',attributes:{str:1,dex:1,con:1,int:0,wis:1,cha:0},inventory:[],possessions,skillPriority:['athletics','perception'],languagePriority:[],featPriority:['Combate com uma arma','Façanha com uma arma','Ataque Poderoso'],relations,job,appearance,clothes,behavior,voice,routine,desire,fear,secret,hook,tactics};

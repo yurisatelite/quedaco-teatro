@@ -1,3 +1,8 @@
+# 0.10.3
+
+- Corrige os 40 modelos que enviavam pertences como texto ao Criador. Agora enviam uma lista de itens, compatível com a biografia e o inventário narrativo.
+- Adiciona verificação do contrato de pertences para evitar a regressão `npc.possessions.join is not a function`.
+
 # 0.10.2
 
 - Declara Foundry 13 como versão verificada para remover o selo de compatibilidade desconhecida.
