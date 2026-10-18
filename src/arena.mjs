@@ -6,6 +6,11 @@ export const ARENA_MAP=Object.freeze({
   width:3000,height:2000,grid:100,columns:30,rows:20,
   spawns:[[{x:200,y:700},{x:200,y:900},{x:200,y:1100}],[{x:2700,y:700},{x:2700,y:900},{x:2700,y:1100}]]
 });
+export const DUEL_MAP=Object.freeze({
+  id:'anel-areia-negra',title:'Anel da Areia Negra',
+  src:ARENA_MAP.src,width:ARENA_MAP.width,height:ARENA_MAP.height,grid:ARENA_MAP.grid,columns:ARENA_MAP.columns,rows:ARENA_MAP.rows,
+  spawns:[[{x:1200,y:950}],[{x:1700,y:950}]]
+});
 
 const rows=value=>Array.from(value??[]);
 const actorById=(actors,id)=>actors?.get?.(id)??rows(actors).find(actor=>actor.id===id);
@@ -28,6 +33,12 @@ export function resolveParticipants(event,state,actors){
   }));
 }
 
+export function resolveDuelists(event,actors){
+  const ids=rows(event.duel?.participants).map(String).filter(Boolean);
+  if(ids.length!==2||ids[0]===ids[1])throw Error('Escolha dois Actors diferentes para montar o Duelo do Anel.');
+  return ids.map(id=>{const actor=actorById(actors,id);if(!actor)throw Error('Um Actor escalado não está mais disponível no mundo.');return actor;});
+}
+
 async function tokenSource(actor,{x,y,side,eventId}){
   let source;
   if(typeof actor.getTokenDocument==='function')source=(await actor.getTokenDocument({x,y,hidden:false,disposition:side===0?1:-1})).toObject();
@@ -37,19 +48,19 @@ async function tokenSource(actor,{x,y,side,eventId}){
   return source;
 }
 
-async function ensureScene(event,{game,SceneClass}){
-  const existing=event.battle?.sceneId&&actorById(game.scenes,event.battle.sceneId);
+async function ensureScene(event,config,{game,SceneClass}){
+  const existing=(event.battle?.sceneId??event.duel?.sceneId)&&actorById(game.scenes,event.battle?.sceneId??event.duel?.sceneId);
   if(existing)return existing;
   const Source=SceneClass??globalThis.Scene??globalThis.foundry?.documents?.Scene;
   if(!Source?.create)throw Error('A API de Cenas do Foundry não está disponível.');
-  return Source.create({name:`${event.name} · ${ARENA_MAP.title}`,width:ARENA_MAP.width,height:ARENA_MAP.height,padding:0.1,grid:{type:1,size:ARENA_MAP.grid,distance:1,units:'m'},background:{src:ARENA_MAP.src},navigation:false,flags:{[ID]:{arena:{eventId:event.id,mapId:ARENA_MAP.id}}}});
+  return Source.create({name:`${event.name} · ${config.title}`,width:config.width,height:config.height,padding:0.1,grid:{type:1,size:config.grid,distance:1,units:'m'},background:{src:config.src},navigation:false,flags:{[ID]:{arena:{eventId:event.id,mapId:config.id}}}});
 }
 
 /** Prepara ou reconstrói somente os Tokens e o Combate pertencentes a esta prova. */
 export async function prepareArena(event,state,{game=globalThis.game,SceneClass,CombatClass}={}){
   if(!game.user?.isGM)throw Error('Somente a Mestra pode montar a arena.');
   if(!event?.battle)throw Error('Esta prova não usa a arena de Batalha de Equipes.');
-  const sides=resolveParticipants(event,state,game.actors),scene=await ensureScene(event,{game,SceneClass});
+  const sides=resolveParticipants(event,state,game.actors),scene=await ensureScene(event,ARENA_MAP,{game,SceneClass});
   const oldTokens=rows(scene.tokens).filter(token=>token.flags?.[ID]?.arena?.eventId===event.id).map(token=>token.id);
   if(oldTokens.length)await scene.deleteEmbeddedDocuments('Token',oldTokens);
   const sources=[];
@@ -66,6 +77,23 @@ export async function prepareArena(event,state,{game=globalThis.game,SceneClass,
   })));
   if(combatants.length)await combat.rollInitiative(combatants.map(row=>row.id));
   return {sceneId:scene.id,combatId:combat.id,tokenIds:tokens.map(token=>token.id),participants:sides.map(side=>side.map(actor=>actor.id))};
+}
+
+/** Prepara uma cena exclusiva para um duelo, com dois Tokens no círculo central e iniciativa rolada. */
+export async function prepareDuelArena(event,{game=globalThis.game,SceneClass,CombatClass}={}){
+  if(!game.user?.isGM)throw Error('Somente a Mestra pode montar o Anel.');
+  if(!event?.duel)throw Error('Esta prova não usa o Duelo do Anel.');
+  const duelists=resolveDuelists(event,game.actors),scene=await ensureScene(event,DUEL_MAP,{game,SceneClass});
+  const oldTokens=rows(scene.tokens).filter(token=>token.flags?.[ID]?.arena?.eventId===event.id).map(token=>token.id);
+  if(oldTokens.length)await scene.deleteEmbeddedDocuments('Token',oldTokens);
+  const tokens=await scene.createEmbeddedDocuments('Token',await Promise.all(duelists.map((actor,side)=>tokenSource(actor,{...DUEL_MAP.spawns[side][0],side,eventId:event.id}))));
+  const Combat=CombatClass??globalThis.Combat??globalThis.foundry?.documents?.Combat;
+  if(!Combat?.create)throw Error('A API de Combates do Foundry não está disponível.');
+  const oldCombat=event.duel.combatId&&actorById(game.combats,event.duel.combatId);if(oldCombat)await oldCombat.delete();
+  const combat=await Combat.create({name:event.name,scene:scene.id,active:true,flags:{[ID]:{arena:{eventId:event.id}}}});
+  const combatants=await combat.createEmbeddedDocuments('Combatant',tokens.map(token=>({tokenId:token.id,actorId:token.actorId,hidden:false,flags:{[ID]:{arena:{eventId:event.id,side:token.flags?.[ID]?.arena?.side}}}})));
+  if(combatants.length)await combat.rollInitiative(combatants.map(row=>row.id));
+  return {sceneId:scene.id,combatId:combat.id,tokenIds:tokens.map(token=>token.id),participants:duelists.map(actor=>actor.id)};
 }
 
 export async function openArena(sceneId,{game=globalThis.game}={}){

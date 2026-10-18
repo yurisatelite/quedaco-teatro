@@ -1,11 +1,11 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {CATALOG} from '../src/catalog.mjs';
-import {ID,initialState,publicState,addBettor,addEvent,placeBet,recordBattle,settleEvent,startBattle} from '../src/model.mjs';
+import {ID,initialState,publicState,addBettor,addEvent,placeBet,recordBattle,recordDuel,settleEvent,startBattle,startDuel} from '../src/model.mjs';
 import {createStore} from '../src/store.mjs';
 import {renderView} from '../src/view.mjs';
 import {CIRCUIT_BETTORS,CIRCUIT_NPCS,CIRCUIT_PERSONNEL,CIRCUIT_TEAMS,applyCircuitActorLinks,createCircuitActors,installCircuit,synchronizeCircuitCompetitorTags} from '../src/roster.mjs';
-import {ARENA_MAP,prepareArena,resolveParticipants} from '../src/arena.mjs';
+import {ARENA_MAP,DUEL_MAP,prepareArena,prepareDuelArena,resolveParticipants,resolveDuelists} from '../src/arena.mjs';
 const fixture=()=>{
   const game={user:{isGM:true},journal:[]};
   const create=async record=>{
@@ -53,6 +53,14 @@ test('batalha de equipes encerra apostas no início e liquida ao atingir o objet
   recordBattle(s,'battle',0,'point');assert.equal(s.events[0].battle.score[0],1);
   recordBattle(s,'battle',0,'point');
   assert.equal(s.events[0].status,'settled');assert.equal(s.events[0].winner,0);assert.equal(s.bets[0].payout,20);
+});
+test('Duelo do Anel mantém regulamento, encerra apostas e liquida por condição declarada',()=>{
+  const s=initialState(CATALOG);
+  addEvent(s,{name:'Lâmina contra Véu',game:'Duelo do Anel',a:'Lâmina',b:'Véu',oddsA:1.8,oddsB:2.3,duelVictory:'desarme',duelMagic:'proibida',duelWeapons:'sorteada',ringOut:'derrota',duelDeaths:'proibida',duelTarget:3,duelRoundLimit:5},'duel');
+  const duel=s.events[0].duel;assert.equal(duel.victory,'desarme');assert.equal(duel.magic,'proibida');assert.equal(duel.weapons,'sorteada');assert.equal(duel.ringOut,'derrota');
+  placeBet(s,{eventId:'duel',bettor:'Arquibancada',side:1,stake:10});startDuel(s,'duel');
+  assert.throws(()=>placeBet(s,{eventId:'duel',bettor:'Atrasado',side:0,stake:1}),/encerradas/);
+  recordDuel(s,'duel',1,'desarme');assert.equal(s.events[0].status,'settled');assert.equal(s.events[0].winner,1);assert.equal(s.bets[0].payout,23);
 });
 test('apostador cadastrado precisa ter caixa e recebe o retorno no próprio registro',()=>{
   const s=initialState(CATALOG);event(s);addBettor(s,{name:'Lume',origin:'Mirmir',purpose:'Pagar a caravana',style:'Prudente',bankroll:25,debt:5},'lume');
@@ -102,6 +110,16 @@ test('arena cria Cena, seis Tokens nas zonas, Combate e iniciativa sem aceitar e
   assert.equal(result.sceneId,scene.id);assert.equal(result.combatId,combat.id);assert.equal(scene.tokens.length,6);assert.deepEqual(scene.tokens.slice(0,3).map(token=>token.x),[200,200,200]);assert.deepEqual(scene.tokens.slice(3).map(token=>token.x),[2700,2700,2700]);assert.equal(combat.initiative.length,6);
   s.events[0].battle.participants=[actors.slice(0,3).map(actor=>actor.id),[actors[0].id,...actors.slice(4).map(actor=>actor.id)]];
   assert.throws(()=>resolveParticipants(s.events[0],s,actors),/dois lados/);
+});
+test('Anel cria cena própria, dois Tokens centrais e iniciativa para duelistas distintos',async()=>{
+  const s=initialState(CATALOG);const actors=[0,1].map(index=>({id:`duelist-${index}`,name:`Duelista ${index}`,prototypeToken:{toObject:()=>({name:`Duelista ${index}`})},async getTokenDocument(data){return {toObject:()=>({name:this.name,...data})};}}));
+  addEvent(s,{name:'O Primeiro Anel',a:'Cinza',b:'Âmbar',oddsA:2,oddsB:2,game:'Duelo do Anel',duelSide0ActorId:actors[0].id,duelSide1ActorId:actors[1].id},'ring');
+  assert.equal(resolveDuelists(s.events[0],actors).length,2);
+  const scene={id:'ring-scene',tokens:[],async createEmbeddedDocuments(type,sources){assert.equal(type,'Token');this.tokens=sources.map((source,index)=>({id:`ring-token-${index}`,...source}));return this.tokens;},async deleteEmbeddedDocuments(){}};
+  const combat={id:'ring-combat',async createEmbeddedDocuments(type,sources){assert.equal(type,'Combatant');return sources.map((source,index)=>({id:`ring-combatant-${index}`,...source}));},async rollInitiative(ids){this.initiative=ids;}};
+  const result=await prepareDuelArena(s.events[0],{game:{user:{isGM:true},actors,scenes:[],combats:[]},SceneClass:{async create(source){assert.equal(source.background.src,DUEL_MAP.src);assert.equal(source.name,'O Primeiro Anel · Anel da Areia Negra');return scene;}},CombatClass:{async create(){return combat;}}});
+  assert.equal(result.sceneId,scene.id);assert.equal(scene.tokens.length,2);assert.deepEqual(scene.tokens.map(token=>token.x),[1200,1700]);assert.equal(combat.initiative.length,2);
+  s.events[0].duel.participants=[actors[0].id,actors[0].id];assert.throws(()=>resolveDuelists(s.events[0],actors),/diferentes/);
 });
 test('publicar é explícito, persiste e retirada limpa a cópia pública',async()=>{
   const {store,game}=fixture();await store.initialize();await store.initialize();assert.equal(game.journal.length,1);

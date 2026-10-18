@@ -22,6 +22,7 @@ try{
   const tab=id=>page.click(`[data-qt-action="tab"][data-id="${id}"]`);
   await tab('direction');await page.fill('[name="notes"]','SEGREDO-MESTRE-987');await page.fill('[name="announcement"]','A final começa ao crepúsculo.');await page.click('button[type="submit"]');
   await tab('events');await page.fill('[name="name"]','Final das Dunas');await page.fill('[name="a"]','Escorpiões');await page.fill('[name="b"]','Caravaneiros');await page.fill('[name="reward"]','Uma relíquia');await page.click('button[type="submit"]');await page.waitForSelector('.qt-versus');assert.equal(await page.locator('.qt-arena-preview').count(),1);
+  assert.match(await page.locator('#preview').innerText(),/Duelo do Anel|1 contra 1/);
   await tab('bets');await page.fill('[name="bettor"]','Ana');await page.fill('[name="stake"]','100');await page.click('button[type="submit"]');await page.waitForSelector('tbody tr');
   await tab('events');await page.click('[data-qt-action="settle"][data-winner="0"]');await page.waitForSelector('text=Vencedor: Escorpiões');
   await tab('bets');assert.match(await page.locator('tbody').innerText(),/Ganha/);assert.match(await page.locator('tbody').innerText(),/200/);

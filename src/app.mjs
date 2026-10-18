@@ -1,4 +1,4 @@
-import {ID, TITLE, publicState, addEvent, addBettor, placeBet, recordBattle, settleEvent, startBattle, required, amount, uid, escape as e} from './model.mjs';
+import {ID, TITLE, publicState, addEvent, addBettor, placeBet, recordBattle, recordDuel, settleEvent, startBattle, startDuel, required, amount, uid, escape as e} from './model.mjs';
 import {renderView} from './view.mjs';
 export function createTheatreApp(store) {
   return class TheatreApp extends foundry.applications.api.ApplicationV2 {
@@ -69,11 +69,12 @@ export function createTheatreApp(store) {
             const yes=await foundry.applications.api.DialogV2.confirm({window:{title:'Confirmar resultado'},content:`<p>${e(event.name)}: ${winner==='void'?'anular e devolver todas as apostas':`vitória de ${e(event.sides[winner])}`}?</p><p>O lançamento financeiro só pode ser efetuado uma vez.</p>`});
             if(!yes)return;
             await store.mutate(s=>settleEvent(s,id,winner),this.revision);
-          }else if(action==='start-battle') {
+          }else if(action==='start-battle'||action==='start-duel') {
             const event=store.read().events.find(row=>row.id===id);
-            if(!event?.battle?.sceneId)throw Error('Prepare a arena e a escalação antes de iniciar a batalha.');
-            const {openArena}=await import('./arena.mjs');await openArena(event.battle.sceneId,{game});
-            await store.mutate(s=>startBattle(s,id),this.revision);
+            const setup=action==='start-duel'?event?.duel:event?.battle;
+            if(!setup?.sceneId)throw Error('Prepare a arena e a escalação antes de iniciar a prova.');
+            const {openArena}=await import('./arena.mjs');await openArena(setup.sceneId,{game});
+            await store.mutate(s=>action==='start-duel'?startDuel(s,id):startBattle(s,id),this.revision);
           }else if(action==='prepare-arena') {
             const state=store.read(),event=state.events.find(row=>row.id===id);
             if(!event)throw Error('Batalha indisponível.');
@@ -82,11 +83,21 @@ export function createTheatreApp(store) {
             const result=await prepareArena(event,state,{game});
             await store.mutate(s=>{const row=s.events.find(item=>item.id===id);Object.assign(row.battle,{...result,phase:'prepared'});},state.revision);
             this.notice='Arena pronta: 6 Tokens posicionados e iniciativa rolada. Revise a cena e inicie quando quiser.';
+          }else if(action==='prepare-duel') {
+            const state=store.read(),event=state.events.find(row=>row.id===id);
+            if(!event)throw Error('Duelo indisponível.');
+            const {prepareDuelArena}=await import('./arena.mjs');
+            this.notice='Montando o Anel: 2 Tokens posicionados e iniciativa sendo rolada.';await this.render({force:true});
+            const result=await prepareDuelArena(event,{game});
+            await store.mutate(s=>{const row=s.events.find(item=>item.id===id);Object.assign(row.duel,{...result,phase:'prepared'});},state.revision);
+            this.notice='Anel pronto: duelistas posicionados e iniciativa rolada. Revise a cena e inicie quando quiser.';
           }else if(action==='open-arena') {
             const event=store.read().events.find(row=>row.id===id);
-            const {openArena}=await import('./arena.mjs');await openArena(event?.battle?.sceneId,{game});
+            const {openArena}=await import('./arena.mjs');await openArena(event?.battle?.sceneId??event?.duel?.sceneId,{game});
           }else if(action==='battle-point'||action==='battle-death') {
             await store.mutate(s=>recordBattle(s,id,target.dataset.side,action==='battle-point'?'point':'death'),this.revision);
+          }else if(action.startsWith('duel-')) {
+            await store.mutate(s=>recordDuel(s,id,target.dataset.side,action.slice(5)),this.revision);
           }else if(action==='incident') {
             const {INCIDENTS}=await import('./catalog.mjs');
             const roll=await new foundry.dice.Roll(`1d${INCIDENTS.length}`).evaluate();

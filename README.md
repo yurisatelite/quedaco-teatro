@@ -1,6 +1,6 @@
 # QUEDAÇO - O Teatro dos Condenados
 
-Versão 0.5.0 para Foundry VTT 13, baseada na instalação local 13.351. Conteúdo autoral de campanha situado em Kravokia e no Deserto de Mirmir, para uso com Skyfall RPG. Personagens, instituições, provas e mistérios são propostas da campanha, não afirmações de cânone. Não inclui texto de livros ou fichas oficiais.
+Versão 0.7.0 para Foundry VTT 13, baseada na instalação local 13.351. Conteúdo autoral de campanha situado em Kravokia e no Deserto de Mirmir, para uso com Skyfall RPG. Personagens, instituições, provas e mistérios são propostas da campanha, não afirmações de cânone. Não inclui texto de livros ou fichas oficiais.
 
 ## Instalação e abertura
 
@@ -23,6 +23,12 @@ Batalha de Equipes é a primeira modalidade implementada a fundo. Ao programá-l
 Cada card de Batalha de Equipes exibe a miniatura da **Areia da Prova**, uma arena original 30×20 do Deserto de Mirmir incluída no módulo. Use **Montar arena, Tokens e iniciativa**: o módulo cria ou reutiliza uma Cena privada, coloca cada lado nas três entradas oeste/leste, monta um Combate apenas para aquela prova e rola a iniciativa. O botão **Abrir mapa da prova** leva a Mestra à Cena para ajustar livremente Tokens, paredes ou cenário antes de começar. **Reconstruir escalação nas zonas** remove apenas os Tokens e o Combate pertencentes àquela prova, reposiciona os seis selecionados e rola uma iniciativa nova.
 
 Crie equipes antes da batalha e inscreva Actors existentes no mundo. A inscrição registra o membro no Teatro e salva a tag `quedaco-teatro.competitor` no Actor com equipe, papel e data; ela não altera ficha, poderes, itens, HP ou ownership.
+
+## Duelo do Anel
+
+O **Duelo do Anel** é uma prova 1 contra 1 completa. Antes da abertura das apostas, escolha dois Actors diferentes e anuncie condição de vitória (rendição, desarme, incapacidade, pontos ou decisão por tempo), política de magia, armas, efeito de sair do anel, mortes, enfermaria e limite de rodadas. As cotações, apostas, anulação e liquidação usam o mesmo livro-caixa seguro das demais provas.
+
+Use **Montar Anel, Tokens e iniciativa** para criar uma Cena exclusiva chamada **Anel da Areia Negra**: ela usa a arte original já incluída, posiciona os dois duelistas no círculo central e cria um Combate próprio com iniciativa rolada. Os controles em andamento só oferecem o resultado previsto no regulamento; para pontos e saída do anel o placar é atualizado, e para rendição, desarme ou incapacidade a vitória é encerrada imediatamente. O mestre ainda pode registrar um resultado narrativo pelos botões de vitória ou anular e devolver as entradas.
 
 ## Circuito inicial e futuras fichas
 

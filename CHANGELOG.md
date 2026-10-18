@@ -1,3 +1,8 @@
+# 0.7.0
+
+- Adiciona **Duelo do Anel** completo: prova 1×1, regulamento público, apostas, duelistas, Cena própria, Tokens centrais e iniciativa.
+- Inclui vitória por rendição, desarme, incapacidade, pontos ou tempo; magia, armas, saída do anel, mortes e enfermaria são registrados antes da luta.
+
 # 0.6.0
 
 - O Circuito Inicial agora envia os 40 NPCs em um lote assinado quando o Criador de Personagens oferece `npcBatch` (v0.1.9+); versões anteriores continuam usando a ponte individual compatível.
