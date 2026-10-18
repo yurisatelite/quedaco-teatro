@@ -1,11 +1,11 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {CATALOG} from '../src/catalog.mjs';
-import {ID,initialState,publicState,addBettor,addEvent,placeBet,recordBattle,recordDuel,settleEvent,startBattle,startDuel} from '../src/model.mjs';
+import {ACTIVE_GAME_IDS,ID,initialState,normalizeState,publicState,addBettor,addEvent,placeBet,recordBattle,recordDuel,settleEvent,startBattle,startDuel} from '../src/model.mjs';
 import {createStore} from '../src/store.mjs';
 import {renderView} from '../src/view.mjs';
 import {CIRCUIT_BETTORS,CIRCUIT_NPCS,CIRCUIT_PERSONNEL,CIRCUIT_TEAMS,applyCircuitActorLinks,createCircuitActors,installCircuit,synchronizeCircuitCompetitorTags} from '../src/roster.mjs';
-import {ARENA_MAP,DUEL_MAP,prepareArena,prepareDuelArena,resolveParticipants,resolveDuelists} from '../src/arena.mjs';
+import {ARENA_MAP,DUEL_MAP,GAME_MAPS,prepareArena,prepareDuelArena,prepareGameScene,resolveParticipants,resolveDuelists} from '../src/arena.mjs';
 const fixture=()=>{
   const game={user:{isGM:true},journal:[]};
   const create=async record=>{
@@ -23,6 +23,14 @@ test('projeção pública usa campos explícitos e remove notas, contas e segred
   assert.equal(p.entries.some(r=>r.id==='ruinas'),false);
   assert.equal(p.teams.length,1);
   assert.doesNotMatch(renderView({state:p}),/data-qt-action="publish"|data-qt-form|Segredos e condução|Livro de apostas/);
+});
+test('modo enxuto publica só os quatro jogos ativos e permite ao mestre ocultar cada um',()=>{
+  const s=initialState(CATALOG),games=s.entries.filter(row=>row.category==='game');
+  assert.deepEqual(games.filter(row=>row.revealed).map(row=>row.id).sort(),Array.from(ACTIVE_GAME_IDS).sort());
+  games.find(row=>row.id==='corrida').revealed=false;
+  assert.equal(publicState(s).entries.some(row=>row.id==='corrida'),false);
+  const legacy={entries:structuredClone(CATALOG)};normalizeState(legacy);
+  assert.deepEqual(legacy.entries.filter(row=>row.category==='game'&&row.revealed).map(row=>row.id).sort(),Array.from(ACTIVE_GAME_IDS).sort());
 });
 test('apostas fixam cotação, pagam uma vez e preservam caixa',()=>{
   const s=initialState(CATALOG);event(s);
@@ -120,6 +128,13 @@ test('Anel cria cena própria, dois Tokens centrais e iniciativa para duelistas 
   const result=await prepareDuelArena(s.events[0],{game:{user:{isGM:true},actors,scenes:[],combats:[]},SceneClass:{async create(source){assert.equal(source.background.src,DUEL_MAP.src);assert.equal(source.name,'O Primeiro Anel · Anel da Areia Negra');return scene;}},CombatClass:{async create(){return combat;}}});
   assert.equal(result.sceneId,scene.id);assert.equal(scene.tokens.length,2);assert.deepEqual(scene.tokens.map(token=>token.x),[1200,1700]);assert.equal(combat.initiative.length,2);
   s.events[0].duel.participants=[actors[0].id,actors[0].id];assert.throws(()=>resolveDuelists(s.events[0],actors),/diferentes/);
+});
+test('cada jogo ativo prepara uma cena-modelo privada com notas de narração',async()=>{
+  for(const gameId of Object.keys(GAME_MAPS)){
+    const scenes=[];const result=await prepareGameScene(gameId,{game:{user:{isGM:true},scenes},SceneClass:{async create(source){const scene={id:`scene-${gameId}`,flags:source.flags};scenes.push(scene);assert.equal(source.background.src,GAME_MAPS[gameId].src);assert.match(source.flags[ID].gameScene.notes,/./);return scene;}}});
+    assert.equal(result.sceneId,`scene-${gameId}`);
+    const again=await prepareGameScene(gameId,{game:{user:{isGM:true},scenes}});assert.equal(again.sceneId,result.sceneId);
+  }
 });
 test('publicar é explícito, persiste e retirada limpa a cópia pública',async()=>{
   const {store,game}=fixture();await store.initialize();await store.initialize();assert.equal(game.journal.length,1);

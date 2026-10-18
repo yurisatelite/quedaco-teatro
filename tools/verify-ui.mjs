@@ -15,12 +15,11 @@ const server=createServer(async(req,res)=>{
 await new Promise(r=>server.listen(0,'127.0.0.1',r));
 const browser=await chromium.launch({channel:'msedge',headless:true});
 try{
-  const page=await browser.newPage({viewport:{width:1180,height:950}}),errors=[];
+  const page=await browser.newPage({viewport:{width:1180,height:950}}),errors=[];page.setDefaultTimeout(5000);
   page.on('pageerror',err=>errors.push(err.message));
   await page.goto(`http://127.0.0.1:${server.address().port}`);
   await page.waitForSelector('[data-qt-action="publish"]');
   const tab=id=>page.click(`[data-qt-action="tab"][data-id="${id}"]`);
-  await tab('direction');await page.fill('[name="notes"]','SEGREDO-MESTRE-987');await page.fill('[name="announcement"]','A final começa ao crepúsculo.');await page.click('button[type="submit"]');
   await tab('events');await page.fill('[name="name"]','Final das Dunas');await page.fill('[name="a"]','Escorpiões');await page.fill('[name="b"]','Caravaneiros');await page.fill('[name="reward"]','Uma relíquia');await page.click('button[type="submit"]');await page.waitForSelector('.qt-versus');assert.equal(await page.locator('.qt-arena-preview').count(),1);
   assert.match(await page.locator('#preview').innerText(),/Duelo do Anel|1 contra 1/);
   await tab('bets');await page.fill('[name="bettor"]','Ana');await page.fill('[name="stake"]','100');await page.click('button[type="submit"]');await page.waitForSelector('tbody tr');
@@ -33,7 +32,7 @@ try{
   // Hold the GM app and make a separate player app reading only publication documents.
   await page.evaluate(async()=>{globalThis.gmApp=previewApp;game.user={isGM:false};const {createStore}=await import('/src/store.mjs');const {createTheatreApp}=await import('/src/app.mjs');const App=createTheatreApp(createStore(game));previewApp=new App();await previewApp.render();});
   assert.equal(await page.locator('[data-qt-action="publish"]').count(),0);
-  assert.match(await page.locator('#preview').innerText(),/A final começa ao crepúsculo/);
+  assert.match(await page.locator('#preview').innerText(),/As portas do Teatro dos Condenados estão abertas/);
   await tab('dossier');await page.click('[data-qt-action="category"][data-id="npc"]');assert.match(await page.locator('#preview').innerText(),/Rask/);assert.doesNotMatch(await page.locator('#preview').innerText(),/Cada vitória apaga|Segredos e condução/);
   await tab('events');assert.match(await page.locator('#preview').innerText(),/Vencedor: Escorpiões/);
   await page.screenshot({path:resolve(root,'output/jogadores.png'),fullPage:true});
@@ -57,5 +56,5 @@ try{
   await page.waitForFunction(()=>document.querySelector('#preview').innerText==='');
   assert.equal(await page.locator('#preview').innerText(),'');
   assert.deepEqual(errors,[]);assert.deepEqual(await page.evaluate(()=>previewErrors),[]);
-  console.log('UI OK: direção, espetáculo, aposta, pagamento, publicação, prévia, jogador, retirada e mobile.');
+  console.log('UI OK: espetáculo, aposta, pagamento, publicação, prévia, jogador, retirada e mobile.');
 }finally{await browser.close();await new Promise(r=>server.close(r));}

@@ -8,8 +8,14 @@ export const ARENA_MAP=Object.freeze({
 });
 export const DUEL_MAP=Object.freeze({
   id:'anel-areia-negra',title:'Anel da Areia Negra',
-  src:ARENA_MAP.src,width:ARENA_MAP.width,height:ARENA_MAP.height,grid:ARENA_MAP.grid,columns:ARENA_MAP.columns,rows:ARENA_MAP.rows,
+  src:'modules/quedaco-teatro/assets/maps/quedaco-anel-areia-negra-v1.png',width:3000,height:2000,grid:100,columns:30,rows:20,
   spawns:[[{x:1200,y:950}],[{x:1700,y:950}]]
+});
+export const GAME_MAPS=Object.freeze({
+  duelo:{id:'duelo',title:'Duelo do Anel · Anel da Areia Negra',src:DUEL_MAP.src,width:3000,height:2000,grid:100,notes:'Duas marcas de entrada ficam a oeste e leste do anel. Anuncie armas, magia, saída do círculo, enfermaria e a condição de vitória antes das apostas.'},
+  equipes:{id:'equipes',title:'Batalha de Equipes · Areia da Prova',src:ARENA_MAP.src,width:3000,height:2000,grid:100,notes:'Três entradas por lado. Defina objetivo, alvo, rodadas, mortes e enfermaria; a prova usa as zonas oeste e leste.'},
+  corrida:{id:'corrida',title:'Corrida dos Escorpiões · Pista de Mirmir',src:'modules/quedaco-teatro/assets/maps/quedaco-corrida-escorpioes-v1.png',width:3000,height:2000,grid:100,notes:'Largada ao sul. Três voltas; use as dunas, arcos e ruínas centrais como obstáculos, atalhos ou pontos de ultrapassagem.'},
+  silencio:{id:'silencio',title:'Jogo do Silêncio · Pátio das Campânulas',src:'modules/quedaco-teatro/assets/maps/quedaco-jogo-silencio-v1.png',width:3000,height:2000,grid:100,notes:'Voz involuntária gera consequência anunciada. Sinos, água, cortinas e placas de pressão funcionam como perigos e pistas; sinais e planejamento são permitidos.'}
 });
 
 const rows=value=>Array.from(value??[]);
@@ -102,4 +108,16 @@ export async function openArena(sceneId,{game=globalThis.game}={}){
   await scene.activate?.();
   await scene.view?.();
   return scene;
+}
+
+/** Cria ou abre a cena-modelo privada de uma modalidade, sem Tokens e sem Combate. */
+export async function prepareGameScene(gameId,{game=globalThis.game,SceneClass}={}){
+  if(!game.user?.isGM)throw Error('Somente a Mestra pode preparar os mapas do Teatro.');
+  const config=GAME_MAPS[gameId];if(!config)throw Error('Esta modalidade ainda não possui mapa no Teatro.');
+  const existing=rows(game.scenes).find(scene=>scene.flags?.[ID]?.gameScene?.gameId===gameId);
+  if(existing)return {sceneId:existing.id,gameId};
+  const Source=SceneClass??globalThis.Scene??globalThis.foundry?.documents?.Scene;
+  if(!Source?.create)throw Error('A API de Cenas do Foundry não está disponível.');
+  const scene=await Source.create({name:config.title,width:config.width,height:config.height,padding:0.1,grid:{type:1,size:config.grid,distance:1,units:'m'},background:{src:config.src},navigation:false,flags:{[ID]:{gameScene:{gameId,notes:config.notes}}}});
+  return {sceneId:scene.id,gameId};
 }

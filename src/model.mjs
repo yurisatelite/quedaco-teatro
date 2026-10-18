@@ -1,5 +1,6 @@
 export const ID = 'quedaco-teatro';
 export const TITLE = 'QUEDAÇO - O Teatro dos Condenados';
+export const ACTIVE_GAME_IDS = new Set(['duelo','equipes','corrida','silencio']);
 export const clone = value => structuredClone(value);
 export const uid = () => globalThis.crypto.randomUUID().replaceAll('-', '').slice(0, 16);
 export const escape = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -15,17 +16,19 @@ export function required(value) {
   return text;
 }
 export function initialState(catalog) {
-  return {schema:4, revision:0, announcement:'As portas do Teatro dos Condenados estão abertas. Nas areias de Kravokia, a próxima lenda pode ser você.', currency:'fichas', crowd:1200, mood:'Expectativa', treasury:0, notes:'', incident:'', entries:clone(catalog), events:[], bets:[], teams:[], bettors:[], personnel:[], contracts:[], rosterInstalled:false};
+  const entries=clone(catalog).map(row=>row.category==='game'?{...row,revealed:ACTIVE_GAME_IDS.has(row.id)}:row);
+  return {schema:5, revision:0, announcement:'As portas do Teatro dos Condenados estão abertas. Nas areias de Kravokia, a próxima lenda pode ser você.', currency:'fichas', crowd:1200, mood:'Expectativa', treasury:0, notes:'', incident:'', entries, events:[], bets:[], teams:[], bettors:[], personnel:[], contracts:[], rosterInstalled:false,gameVisibilityInitialized:true,gameScenes:{}};
 }
 export function normalizeState(state) {
-  state.schema ??= 1; state.events ??= []; state.bets ??= []; state.teams ??= []; state.bettors ??= []; state.personnel ??= []; state.contracts ??= []; state.rosterInstalled ??= false;
+  state.schema ??= 1; state.events ??= []; state.bets ??= []; state.teams ??= []; state.bettors ??= []; state.personnel ??= []; state.contracts ??= []; state.rosterInstalled ??= false;state.gameScenes??={};
+  if(!state.gameVisibilityInitialized){for(const entry of state.entries??[])if(entry.category==='game')entry.revealed=ACTIVE_GAME_IDS.has(entry.id);state.gameVisibilityInitialized=true;}
   for (const team of state.teams) { team.members ??= []; team.visible ??= false; team.fame ??= 0; team.sponsor ??= ''; }
   for (const event of state.events) {
     event.status ??= 'open'; event.visible ??= true; event.winner ??= null;
     if (event.game === 'Batalha de Equipes') {event.battle ??= battleSetup({});event.battle.participants ??=[[],[]];event.battle.sceneId ??='';event.battle.combatId ??='';event.battle.mapId ??='areia-prova';}
     if (event.game === 'Duelo do Anel') {event.duel ??= duelSetup({});event.duel.sceneId ??='';event.duel.combatId ??='';event.duel.mapId ??='anel-areia-negra';}
   }
-  state.schema = 4; return state;
+  state.schema = 5; return state;
 }
 // Explicit allowlist: never spread private records into public documents.
 export function publicState(state) {

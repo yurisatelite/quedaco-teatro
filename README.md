@@ -1,6 +1,6 @@
 # QUEDAÇO - O Teatro dos Condenados
 
-Versão 0.7.0 para Foundry VTT 13, baseada na instalação local 13.351. Conteúdo autoral de campanha situado em Kravokia e no Deserto de Mirmir, para uso com Skyfall RPG. Personagens, instituições, provas e mistérios são propostas da campanha, não afirmações de cânone. Não inclui texto de livros ou fichas oficiais.
+Versão 0.8.0 para Foundry VTT 13, baseada na instalação local 13.351. Conteúdo autoral de campanha situado em Kravokia e no Deserto de Mirmir, para uso com Skyfall RPG. Personagens, instituições, provas e mistérios são propostas da campanha, não afirmações de cânone. Não inclui texto de livros ou fichas oficiais.
 
 ## Instalação e abertura
 
@@ -15,6 +15,12 @@ O mestre recebe um painel com visão geral, dossiê, espetáculos, apostas, equi
 Escolha quais registros incluir usando “Incluir na próxima publicação”. Em Direção, salve público, clima e anúncio. Em Espetáculos, programe confrontos e escolha visibilidade. A prévia mostra a próxima publicação. “Mostrar para os jogadores” cria ou atualiza outro JournalEntry, somente com campos públicos, e abre a apresentação nos clientes conectados. Os jogadores navegam livremente pelos lugares, personagens revelados, modalidades e programação publicados. Alterações posteriores ficam em preparação até uma nova publicação.
 
 “Fechar apresentação” limpa o conteúdo da cópia pública e fecha a janela nos clientes. Isso não desfaz o que alguém já leu ou copiou. Quem entrar depois consegue abrir o último cartaz ainda ativo pelo menu. O JournalEntry público guarda dados em flags para esta interface; sua folha padrão não é a apresentação.
+
+## Modo enxuto, jogos e mapas
+
+O cartaz novo começa apenas com **Duelo do Anel**, **Batalha de Equipes**, **Corrida dos Escorpiões** e **Jogo do Silêncio** liberados. Na aba **Jogos**, a Mestra pode liberar ou ocultar cada modalidade individualmente. Um jogo oculto não é publicado: jogadores não o veem como jogo disponível, nem no dossiê nem no painel de Jogos.
+
+Os quatro cards ativos trazem miniatura, notas de condução e **Criar e abrir cena-modelo**. A primeira abertura cria uma Cena privada, que depois pode ser reaberta pelo card. Os mapas são originais, ortogonais e pensados para Tokens: Arena da Prova (equipes), Anel da Areia Negra (duelo), Pista de Mirmir (corrida) e Pátio das Campânulas (silêncio). Não há perspectiva inclinada nos mapas distribuídos.
 
 ## Batalha de equipes e apostas
 
@@ -35,6 +41,8 @@ Use **Montar Anel, Tokens e iniciativa** para criar uma Cena exclusiva chamada *
 Na aba **Elenco**, a Mestra instala uma vez o Circuito Inicial: Dunas de Vidro, Filhos do Atoleiro, Lâminas do Crepúsculo e Quebravento, cada uma com quatro competidores e estilo próprio; há ainda 16 apostadores e oito pessoas de bastidor. Todo registro possui origem, objetivo, receio, segredo, rotina, itens narrativos, dinheiro e gancho de cena.
 
 Com **QUEDAÇO - Personagens Skyfall RPG** instalado e ativo, use **Criar / sincronizar fichas do elenco**. O Teatro contém os 40 modelos e os entrega ao Criador apenas quando você pede a sincronização. No Criador v0.1.9 ou superior, eles seguem como um lote assinado único; em versões anteriores, continuam pela ponte individual compatível. Em ambos os casos, o Criador confere todos os compêndios da mesa antes de gravar Actors nativos. Cada Actor recebe a proveniência `quedaco-teatro`, tags de circuito/função/equipe e `quedaco-teatro.npc`; os 16 competidores recebem também `quedaco-teatro.competitor`. Um segundo uso não duplica modelos já criados e restaura os vínculos com equipe, apostador ou bastidor. Se a criação em si falhar depois de alguma ficha, o Criador preserva a ficha pendente para revisão e informa o erro — nunca apaga ou recria Actors automaticamente.
+
+Depois da sincronização, procure no diretório **Actors › Teatro dos Condenados**. Dentro dele há as pastas **Equipes** (com uma pasta por equipe), **Apostadores** e **Bastidores**. Arraste qualquer Actor de lá para a Cena; na aba **Equipes**, os cards com miniatura também abrem a ficha com um clique e podem ser arrastados.
 
 Apenas o mestre registra apostas nesta versão. As cotações são decimais: apostar 100 a 1,75 retorna 175 no total se vencer. A cotação fica congelada no bilhete. Cadastre apostadores da plateia com origem, objetivo, perfil, caixa e dívida para criar conversa, suspeita e ganchos de contrato; o caixa do apostador diminui ao entrar e recebe o retorno na liquidação. Pode vincular o registro a um Actor, mas o módulo não transfere moedas nem itens entre fichas.
 

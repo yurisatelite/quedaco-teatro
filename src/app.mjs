@@ -8,7 +8,7 @@ export function createTheatreApp(store) {
       const gm=game.user.isGM, published=store.published();
       const source=gm?store.read():null;
       this.revision=source?.revision;
-      const actors=gm&&!this.preview?Array.from(game.actors ?? []).map(actor=>({id:actor.id,name:actor.name,type:actor.type,player:Boolean(actor.hasPlayerOwner)})).sort((a,b)=>a.name.localeCompare(b.name,'pt-BR')):[];
+      const actors=gm&&!this.preview?Array.from(game.actors ?? []).map(actor=>({id:actor.id,uuid:actor.uuid,name:actor.name,img:actor.img,type:actor.type,player:Boolean(actor.hasPlayerOwner)})).sort((a,b)=>a.name.localeCompare(b.name,'pt-BR')):[];
       return renderView({state:gm?(this.preview?publicState(source):source):published,gm,preview:this.preview,tab:this.tab,category:this.category,query:this.query,notice:this.notice,published,actors});
     }
     _replaceHTML(result,content) {content.innerHTML=result;}
@@ -34,6 +34,12 @@ export function createTheatreApp(store) {
         }else if(event.target.closest('form'))this.dirty=true;
       },{signal});
       this.element.addEventListener('change',event=>{if(event.target.closest('form'))this.dirty=true;},{signal});
+      this.element.addEventListener('dragstart',event=>{
+        const actorId=event.target.closest('[data-qt-actor-id]')?.dataset.qtActorId;if(!actorId)return;
+        const actor=game.actors?.get(actorId);if(!actor)return;
+        event.dataTransfer?.setData('text/plain',JSON.stringify({type:'Actor',uuid:actor.uuid}));
+        event.dataTransfer.effectAllowed='copy';
+      },{signal});
       this.dirty=false;
     }
     requireGM() {if(!game.user.isGM||this.preview)throw Error('Somente o mestre pode alterar o Teatro.');}
@@ -61,6 +67,17 @@ export function createTheatreApp(store) {
           if(this.dirty)throw Error('Salve os campos do formulário antes de usar esta ação.');
           if(action==='publish') {await store.publish();this.notice='Cartaz publicado. A apresentação foi aberta para os jogadores conectados.';}
           else if(action==='withdraw') {await store.withdraw();this.notice='Apresentação fechada. Informações já vistas não podem ser desfeitas.';}
+          else if(action==='open-actor') {const actor=game.actors?.get(target.dataset.actorId);if(!actor)throw Error('Actor indisponível.');actor.sheet?.render(true);return;}
+          else if(action==='open-actor-folder') {ui.actors?.render(true);this.notice='Abra a pasta Teatro dos Condenados no diretório de Actors. Os NPCs podem ser arrastados dela para qualquer Cena.';}
+          else if(action==='prepare-game-map') {
+            const state=store.read(),gameId=target.dataset.gameId;const {prepareGameScene,openArena}=await import('./arena.mjs');
+            this.notice='Criando a Cena-modelo do jogo.';await this.render({force:true});
+            const result=await prepareGameScene(gameId,{game});await store.mutate(s=>{s.gameScenes[gameId]=result.sceneId;},state.revision);await openArena(result.sceneId,{game});
+            this.notice='Mapa pronto e aberto. As notas de narração estão no card do jogo.';
+          }else if(action==='open-game-map') {
+            const sceneId=store.read().gameScenes?.[target.dataset.gameId];if(!sceneId)throw Error('Prepare a Cena-modelo deste jogo primeiro.');
+            const {openArena}=await import('./arena.mjs');await openArena(sceneId,{game});
+          }
           else if(action==='edit-entry') {await this.editEntry(id);}
           else if(action==='settle') {
             const winner=target.dataset.winner==='void'?'void':Number(target.dataset.winner);
@@ -107,7 +124,7 @@ export function createTheatreApp(store) {
             await store.mutate(s=>installCircuit(s),this.revision);
             this.notice='Circuito inicial instalado: 4 equipes, 16 apostadores e 8 pessoas de bastidor.';
           }else if(action==='create-roster-actors') {
-            const {CREATOR_ID,createCircuitActors,applyCircuitActorLinks,synchronizeCircuitCompetitorTags}=await import('./roster.mjs');
+            const {CREATOR_ID,createCircuitActors,applyCircuitActorLinks,organizeCircuitActors,synchronizeCircuitCompetitorTags}=await import('./roster.mjs');
             const creator=game.modules?.get(CREATOR_ID)?.api;
             const total=store.read().teams.reduce((count,team)=>count+team.members.length,0)+(store.read().bettors?.length??0)+(store.read().personnel?.length??0);
             const yes=await foundry.applications.api.DialogV2.confirm({window:{title:'Criar fichas do elenco'},content:`<p>O Criador de Personagens vai pré-validar e criar ${total} Actors nativos de Skyfall.</p><p>Fichas já vinculadas pelo mesmo modelo não serão duplicadas. Cada ficha receberá a tag <code>quedaco-teatro.npc</code>.</p>`});
@@ -118,10 +135,12 @@ export function createTheatreApp(store) {
             const current=store.read();
             await store.mutate(s=>applyCircuitActorLinks(s,result.linked),current.revision);
             await synchronizeCircuitCompetitorTags(store.read(),{game});
-            this.notice=`Elenco sincronizado: ${result.created} ficha(s) criada(s), ${result.existing} já existente(s).${result.warnings?.length?` ${result.warnings.length} relação(ões) aguardam revisão.`:''}`;
+            await organizeCircuitActors(store.read(),{game});
+            this.notice=`Elenco sincronizado: ${result.created} ficha(s) criada(s), ${result.existing} já existente(s). Organizado no diretório Actors › Teatro dos Condenados.${result.warnings?.length?` ${result.warnings.length} relação(ões) aguardam revisão.`:''}`;
           }else {
             await store.mutate(s=>{
               if(action==='reveal'){const row=s.entries.find(r=>r.id===id);if(row)row.revealed=!row.revealed;}
+              if(action==='toggle-game'){const row=s.entries.find(r=>r.id===id&&r.category==='game');if(row)row.revealed=!row.revealed;}
               if(action==='event-visible'){const row=s.events.find(r=>r.id===id);if(row)row.visible=!row.visible;}
               if(action==='lock'){const row=s.events.find(r=>r.id===id);if(row?.status==='open')row.status='closed';}
               if(action==='team-visible'){const row=s.teams.find(r=>r.id===id);if(row)row.visible=!row.visible;}

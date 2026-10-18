@@ -198,6 +198,30 @@ export async function synchronizeCircuitCompetitorTags(state,{game=globalThis.ga
   }
 }
 
+const actorById=(actors,id)=>actors?.get?.(id)??Array.from(actors??[]).find(actor=>actor.id===id);
+async function theatreFolder(name,parent,{game,FolderClass}){
+  const existing=Array.from(game.folders??[]).find(folder=>folder.type==='Actor'&&folder.name===name&&(folder.folder?.id??folder.folder??'')===(parent?.id??''));
+  if(existing)return existing;
+  const Folder=FolderClass??globalThis.Folder??globalThis.foundry?.documents?.Folder;
+  if(!Folder?.create)throw Error('A API de Pastas do Foundry não está disponível.');
+  return Folder.create({name,type:'Actor',folder:parent?.id??null,color:'#7a361f',sorting:'a'});
+}
+
+/** Organiza Actors sincronizados no diretório para abrir, clicar ou arrastar sem procurar nomes. */
+export async function organizeCircuitActors(state,{game=globalThis.game,FolderClass}={}){
+  const root=await theatreFolder('Teatro dos Condenados',null,{game,FolderClass});
+  const teamsRoot=await theatreFolder('Equipes',root,{game,FolderClass});
+  const bettorsRoot=await theatreFolder('Apostadores',root,{game,FolderClass});
+  const personnelRoot=await theatreFolder('Bastidores',root,{game,FolderClass});
+  for(const team of state.teams){
+    const folder=await theatreFolder(team.name,teamsRoot,{game,FolderClass});
+    for(const member of team.members){const actor=actorById(game.actors,member.actorId);if(actor?.update)await actor.update({folder:folder.id});}
+  }
+  for(const row of state.bettors){const actor=actorById(game.actors,row.actorId);if(actor?.update)await actor.update({folder:bettorsRoot.id});}
+  for(const row of state.personnel??[]){const actor=actorById(game.actors,row.actorId);if(actor?.update)await actor.update({folder:personnelRoot.id});}
+  return root;
+}
+
 export function installCircuit(state) {
   if(state.rosterInstalled)throw Error('O circuito inicial já foi instalado neste Teatro.');
   for(const source of CIRCUIT_TEAMS)state.teams.push({id:uid(),name:source.name,sponsor:source.sponsor,fame:source.fame,visible:source.visible,identity:source.identity,members:source.members.map(([name,role,bio])=>({actorId:'',npcKey:npcKey(name),name,role,bio}))});

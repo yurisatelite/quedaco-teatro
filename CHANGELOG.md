@@ -1,3 +1,10 @@
+# 0.8.0
+
+- Cria modo enxuto: só Duelo do Anel, Batalha de Equipes, Corrida dos Escorpiões e Jogo do Silêncio são publicados inicialmente; cada jogo pode ser ocultado ou liberado individualmente.
+- Adiciona cards de jogos com miniaturas, notas de narração e cenas-modelo de abertura direta.
+- Inclui três mapas originais ortogonais: Anel da Areia Negra, Pista de Mirmir e Pátio das Campânulas.
+- Remove Contratos e Direção da navegação e organiza o elenco sincronizado em Actors › Teatro dos Condenados, com cards arrastáveis de equipe.
+
 # 0.7.0
 
 - Adiciona **Duelo do Anel** completo: prova 1×1, regulamento público, apostas, duelistas, Cena própria, Tokens centrais e iniciativa.
