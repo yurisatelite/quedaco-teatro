@@ -1,6 +1,16 @@
 # QUEDAÇO - O Teatro dos Condenados
 
-Versão 0.8.1 para Foundry VTT 13, baseada na instalação local 13.351. Conteúdo autoral de campanha situado em Kravokia e no Deserto de Mirmir, para uso com Skyfall RPG. Personagens, instituições, provas e mistérios são propostas da campanha, não afirmações de cânone. Não inclui texto de livros ou fichas oficiais.
+Versão 0.9.0 para Foundry VTT 13. Conteúdo autoral de campanha situado em Kravokia e no Deserto de Mirmir, para uso com Skyfall RPG. Personagens, instituições, provas e mistérios são propostas da campanha, não afirmações de cânone. Não inclui texto de livros ou fichas oficiais.
+
+## Inscrição dos jogadores
+
+Depois de o mestre publicar o Teatro, cada jogador abre **Inscrição e equipes**, escolhe uma ficha própria e paga **10 pilas uma única vez por personagem**. O saldo usado é `system.currency.p`; trocados e kurmacs não são convertidos automaticamente. Um mestre precisa estar conectado. O módulo confere a propriedade da ficha e processa solicitações por um único mestre ativo.
+
+Inscritos podem criar equipes, convidar outros inscritos sem equipe, aceitar ou recusar convites, solicitar vagas nas provas abertas e apostar. Retrato, inventário e pilas vêm da ficha. As classes disponíveis são Combatente, Especialista e Ocultista. A escolha no cadastro não modifica a classe mecânica do personagem. O mestre distribui as vagas solicitadas entre os lados da prova antes de montar a arena.
+
+**Apostas em pilas** debitam a ficha e usam a cotação do bilhete. Após o resultado, use **Resgatar prêmios disponíveis**. **Apostas de itens** usam o preço da ficha em pilas e retiram a quantidade apostada de circulação. Vitória devolve o item e paga o lucro em pilas; anulação devolve o item; derrota entrega o item à Casa. Itens devem estar desequipados e desvinculados; pertences narrativos sem valor não são aceitos. Não apague o item de quantidade zero enquanto houver aposta pendente. Prêmios fracionários precisam de conversão pelo mestre.
+
+Patrocinadores usam fichas de personagem sem proprietário jogador. No Skyfall, o tipo interno `npc` corresponde a **Ameaça** e é excluído dessa seleção. Ameaças continuam disponíveis ao mestre na escalação das provas.
 
 ## Instalação e abertura
 

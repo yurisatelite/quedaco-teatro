@@ -1,6 +1,7 @@
 import {ID} from './model.mjs';
 import {createStore} from './store.mjs';
 import {createTheatreApp} from './app.mjs';
+import {connectMembership} from './membership.mjs';
 let app,store;
 export async function openTheatre() {
   if(!app)throw Error('O Teatro ainda está inicializando.');
@@ -17,6 +18,7 @@ Hooks.once('ready',async()=>{
     store=createStore(game,{create:data=>foundry.documents.JournalEntry.create(data),seed:async()=>(await import('./catalog.mjs')).CATALOG});
     if(game.user.isGM)await store.initialize();
     const App=createTheatreApp(store);app=new App();
+    app.sendMemberRequest=connectMembership(store,{game,onChange:()=>{if(app.rendered&&!app.dirty)void app.render({force:true});}});
     const module=game.modules.get(ID);
     module.api={...module.api,family:'quedaco',contractVersion:1,id:ID,version:module.version,
       capabilities:{openTheatre:true,publicPresentation:true},openTheatre,

@@ -157,6 +157,11 @@ test('jogadores não podem ler direção, alterar, publicar ou inicializar',asyn
   for(const action of [()=>store.initialize(),()=>store.mutate(()=>{}),()=>store.publish(),()=>store.withdraw()])await assert.rejects(action,/mestre/);
   assert.ok(store.published());
 });
+test('atualização colaborativa preserva anúncio e jogos ainda não publicados',async()=>{
+  const {store}=fixture();await store.initialize();await store.publish();
+  await store.mutate(s=>{s.announcement='ANUNCIO-PENDENTE';s.entries.find(e=>e.id==='cacada').revealed=true;s.memberships=[{actorId:'pc',name:'Pessoa',role:'Especialista'}];});
+  await store.refreshMembers();const p=store.published();assert.notEqual(p.announcement,'ANUNCIO-PENDENTE');assert.equal(p.entries.some(e=>e.id==='cacada'),false);assert.equal(p.memberships[0].actorId,'pc');
+});
 test('revisão antiga é rejeitada e falha não bloqueia a fila',async()=>{
   const {store}=fixture();await store.initialize();
   await store.mutate(s=>{s.notes='Mantido';},0);

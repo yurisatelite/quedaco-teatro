@@ -1,3 +1,12 @@
+# 0.9.0
+
+- Inscrição colaborativa por personagem, com taxa única de 10 pilas, classes e retratos.
+- Equipes abertas, lista de inscritos disponíveis, convites com aceite e solicitação de vagas em provas abertas.
+- Apostas de jogadores debitam pilas da ficha; itens físicos podem ser apostados pelo preço da ficha, com custódia e devolução na vitória/anulação. Resgate de lucro em pilas.
+- Processamento por um mestre ativo, validação do proprietário, proteção contra cobrança e pagamento repetidos.
+- Cards de apostadores e bastidores vinculados a fichas; patrocinadores excluem o tipo Ameaça do Skyfall.
+- Atualizações colaborativas preservam o cartaz e não publicam alterações de narração ainda em preparação.
+
 # 0.8.1
 
 - Corrige a criação dos NPCs Combatentes: o modelo agora prioriza o par compatível Combate com uma arma / Façanha com uma arma.

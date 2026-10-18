@@ -20,7 +20,7 @@ export function initialState(catalog) {
   return {schema:5, revision:0, announcement:'As portas do Teatro dos Condenados estão abertas. Nas areias de Kravokia, a próxima lenda pode ser você.', currency:'fichas', crowd:1200, mood:'Expectativa', treasury:0, notes:'', incident:'', entries, events:[], bets:[], teams:[], bettors:[], personnel:[], contracts:[], rosterInstalled:false,gameVisibilityInitialized:true,gameScenes:{}};
 }
 export function normalizeState(state) {
-  state.schema ??= 1; state.events ??= []; state.bets ??= []; state.teams ??= []; state.bettors ??= []; state.personnel ??= []; state.contracts ??= []; state.rosterInstalled ??= false;state.gameScenes??={};
+  state.schema ??= 1; state.events ??= []; state.bets ??= []; state.teams ??= []; state.bettors ??= []; state.personnel ??= []; state.contracts ??= []; state.rosterInstalled ??= false;state.gameScenes??={};state.memberships??=[];state.invitations??=[];state.enrollments??=[];state.memberRequests??=[];
   if(!state.gameVisibilityInitialized){for(const entry of state.entries??[])if(entry.category==='game')entry.revealed=ACTIVE_GAME_IDS.has(entry.id);state.gameVisibilityInitialized=true;}
   for (const team of state.teams) { team.members ??= []; team.visible ??= false; team.fame ??= 0; team.sponsor ??= ''; }
   for (const event of state.events) {
@@ -32,12 +32,17 @@ export function normalizeState(state) {
 }
 // Explicit allowlist: never spread private records into public documents.
 export function publicState(state) {
+  const eventVisible=event=>event.visible&&state.entries.find(row=>row.category==='game'&&row.name===event.game)?.revealed!==false;
   return {
     schema:1, announcement:state.announcement, currency:state.currency,
     crowd:state.crowd, mood:state.mood,
+    memberships:(state.memberships??[]).map(m=>({actorId:m.actorId,name:m.name,img:m.img,role:m.role})),
+    invitations:(state.invitations??[]).map(i=>({id:i.id,teamId:i.teamId,actorId:i.actorId})),
+    enrollments:(state.enrollments??[]).map(i=>({eventId:i.eventId,actorId:i.actorId,name:i.name})),
+    bettingActivity:state.bets.filter(b=>b.eventId&&state.events.some(ev=>ev.id===b.eventId&&eventVisible(ev))).map(b=>({name:b.bettor,actorId:b.actorId??'',eventId:b.eventId,stake:b.stake,status:b.status})),
     entries:state.entries.filter(e => e.revealed).map(e => ({id:e.id, category:e.category, name:e.name, text:e.text})),
-    events:state.events.filter(e => e.visible).map(e => ({id:e.id, name:e.name, game:e.game, sides:[...e.sides], terrain:e.terrain, reward:e.reward, status:e.status, winner:e.winner, odds:[...e.odds], battle:e.battle ? publicBattle(e.battle) : null, duel:e.duel ? publicDuel(e.duel) : null})),
-    teams:state.teams.filter(t => t.visible).map(t => ({id:t.id, name:t.name, fame:t.fame, members:(t.members ?? []).map(m => ({name:m.name, role:m.role}))}))
+    events:state.events.filter(eventVisible).map(e => ({id:e.id, name:e.name, game:e.game, sides:[...e.sides], terrain:e.terrain, reward:e.reward, status:e.status, winner:e.winner, odds:[...e.odds], battle:e.battle ? publicBattle(e.battle) : null, duel:e.duel ? publicDuel(e.duel) : null})),
+    teams:state.teams.filter(t => t.visible).map(t => ({id:t.id, name:t.name, fame:t.fame,ownerActorId:t.ownerActorId??'',open:Boolean(t.open), members:(t.members ?? []).map(m => ({actorId:m.actorId,name:m.name,img:m.img, role:m.role}))}))
   };
 }
 const choices = new Set(['objetivos','eliminação','rendição','tempo']);

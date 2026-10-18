@@ -24,11 +24,21 @@ export function createStore(game, {create, seed, uuid=uid} = {}) {
     },
     async publish() {
       gm(); return serial(async()=>{
-        const state=data(find('source'))?.state;
+        const raw=data(find('source'))?.state;
+        const state=raw?normalizeState(clone(raw)):null;
         if(!state)throw Error('Direção indisponível.');
         const publication={active:true,token:uuid(),sourceRevision:state.revision,...publicState(state)};
         await write(find('publication'),'publication',{publication},true);
         return clone(publication);
+      });
+    },
+    async refreshMembers() {
+      gm();return serial(async()=>{
+        const doc=find('publication'),previous=data(doc)?.publication;if(!previous?.active)return;
+        const state=normalizeState(clone(data(find('source')).state)),next=publicState(state);
+        const eventIds=new Set(previous.events.map(e=>e.id));
+        const publication={...clone(previous),token:uuid(),memberships:next.memberships,invitations:next.invitations,enrollments:next.enrollments.filter(e=>eventIds.has(e.eventId)),bettingActivity:next.bettingActivity.filter(b=>eventIds.has(b.eventId)),teams:[...previous.teams.filter(t=>!t.ownerActorId),...next.teams.filter(t=>t.ownerActorId)]};
+        await write(doc,'publication',{publication},true);
       });
     },
     async withdraw() {

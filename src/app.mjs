@@ -1,5 +1,6 @@
 import {ID, TITLE, publicState, addEvent, addBettor, placeBet, recordBattle, recordDuel, settleEvent, startBattle, startDuel, required, amount, uid, escape as e} from './model.mjs';
 import {renderView} from './view.mjs';
+import {characterSummary,ownedCharacter,eligibleNpc} from './membership.mjs';
 export function createTheatreApp(store) {
   return class TheatreApp extends foundry.applications.api.ApplicationV2 {
     static DEFAULT_OPTIONS = {id:ID,classes:['quedaco-teatro'],window:{title:'QT.Title',icon:'fa-solid fa-masks-theater',resizable:true},position:{width:1120,height:790}};
@@ -8,12 +9,17 @@ export function createTheatreApp(store) {
       const gm=game.user.isGM, published=store.published();
       const source=gm?store.read():null;
       this.revision=source?.revision;
-      const actors=gm&&!this.preview?Array.from(game.actors ?? []).map(actor=>({id:actor.id,uuid:actor.uuid,name:actor.name,img:actor.img,type:actor.type,player:Boolean(actor.hasPlayerOwner)})).sort((a,b)=>a.name.localeCompare(b.name,'pt-BR')):[];
+      const actors=!this.preview?Array.from(game.actors ?? []).filter(actor=>gm||ownedCharacter(actor,game.user)).map(actor=>({...characterSummary(actor),npc:eligibleNpc(actor)})).sort((a,b)=>a.name.localeCompare(b.name,'pt-BR')):[];
       return renderView({state:gm?(this.preview?publicState(source):source):published,gm,preview:this.preview,tab:this.tab,category:this.category,query:this.query,notice:this.notice,published,actors});
     }
     _replaceHTML(result,content) {content.innerHTML=result;}
     _onRender(context,options) {
       super._onRender(context,options);
+      for(const input of this.element.querySelectorAll('input[name="role"]')){
+        const select=document.createElement('select');select.name='role';for(const role of ['Combatente','Especialista','Ocultista']){const option=document.createElement('option');option.value=role;option.textContent=role;select.append(option);}input.replaceWith(select);
+      }
+      const sponsorInput=this.element.querySelector('input[name="sponsor"]');
+      if(sponsorInput){const select=document.createElement('select');select.name='sponsorActorId';const empty=document.createElement('option');empty.value='';empty.textContent='Sem patrocinador';select.append(empty);for(const actor of Array.from(game.actors??[]).filter(eligibleNpc)){const option=document.createElement('option');option.value=actor.id;option.textContent=actor.name;select.append(option);}sponsorInput.replaceWith(select);}
       this.listeners?.abort();this.listeners=new AbortController();const {signal}=this.listeners;
       const report=fn=>Promise.resolve().then(fn).catch(err=>{console.error(ID,err);ui.notifications.error(err.message);});
       this.element.addEventListener('click',event=>{
@@ -62,6 +68,7 @@ export function createTheatreApp(store) {
           if(action==='tab')this.tab=id;
           if(action==='category'){this.category=id;this.query='';}
           if(action==='preview'){if(!game.user.isGM)return;this.preview=!this.preview;this.tab='overview';}
+        }else if(action==='refresh-member') {await this.render({force:true});return;
         }else{
           this.requireGM();
           if(this.dirty)throw Error('Salve os campos do formulário antes de usar esta ação.');
@@ -105,7 +112,7 @@ export function createTheatreApp(store) {
             if(!event)throw Error('Duelo indisponível.');
             const {prepareDuelArena}=await import('./arena.mjs');
             this.notice='Montando o Anel: 2 Tokens posicionados e iniciativa sendo rolada.';await this.render({force:true});
-            const result=await prepareDuelArena(event,{game});
+            const result=await prepareDuelArena(event,{game,state});
             await store.mutate(s=>{const row=s.events.find(item=>item.id===id);Object.assign(row.duel,{...result,phase:'prepared'});},state.revision);
             this.notice='Anel pronto: duelistas posicionados e iniciativa rolada. Revise a cena e inicie quando quiser.';
           }else if(action==='open-arena') {
@@ -153,6 +160,10 @@ export function createTheatreApp(store) {
       }finally{this.busy=false;}
     }
     async submit(form) {
+      if(form.dataset.qtForm==='member'){
+        if(this.busy)return;this.busy=true;
+        try{const request=Object.fromEntries(new FormData(form));await this.sendMemberRequest(request);this.dirty=false;this.notice='Solicitação enviada ao mestre conectado.';await this.render({force:true});}finally{this.busy=false;}return;
+      }
       this.requireGM();if(this.busy)return;this.busy=true;
       try {
         const data=new FormData(form),values=Object.fromEntries(data), action=form.dataset.qtForm;
@@ -167,7 +178,7 @@ export function createTheatreApp(store) {
           }
           if(action==='bet')placeBet(s,values);
           if(action==='bettor')addBettor(s,values);
-          if(action==='team')s.teams.push({id:uid(),name:required(values.name),sponsor:values.sponsor,fame:0,visible:false,members:[]});
+          if(action==='team'){const sponsor=values.sponsorActorId?game.actors.get(values.sponsorActorId):null;if(sponsor&&!eligibleNpc(sponsor))throw Error('Patrocinadores devem ser NPCs; ameaças não são permitidas.');s.teams.push({id:uid(),name:required(values.name),sponsor:sponsor?.name??'',sponsorActorId:sponsor?.id??'',fame:0,visible:false,members:[]});}
           if(action==='team-member') {
             const team=s.teams.find(t=>t.id===values.teamId),actor=game.actors?.get(values.actorId);
             if(!team||!actor)throw Error('Equipe ou Actor indisponível.');

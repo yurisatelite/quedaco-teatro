@@ -35,7 +35,7 @@ export function resolveParticipants(event,state,actors){
   if(ids.some(side=>side.length!==3))throw Error('Escolha exatamente três Actors para cada lado antes de montar a arena.');
   const unique=new Set(ids.flat());if(unique.size!==6)throw Error('Um Actor não pode lutar nos dois lados da mesma Batalha de Equipes.');
   return ids.map(side=>side.map(id=>{
-    const actor=actorById(actors,id);if(!actor)throw Error('Um Actor escalado não está mais disponível no mundo.');return actor;
+    const actor=actorById(actors,id);if(!actor)throw Error('Um Actor escalado não está mais disponível no mundo.');if(actor.hasPlayerOwner&&!state.memberships?.some(m=>m.actorId===id))throw Error(`${actor.name} precisa se inscrever no Coliseu antes de participar.`);return actor;
   }));
 }
 
@@ -86,10 +86,12 @@ export async function prepareArena(event,state,{game=globalThis.game,SceneClass,
 }
 
 /** Prepara uma cena exclusiva para um duelo, com dois Tokens no círculo central e iniciativa rolada. */
-export async function prepareDuelArena(event,{game=globalThis.game,SceneClass,CombatClass}={}){
+export async function prepareDuelArena(event,{game=globalThis.game,SceneClass,CombatClass,state}={}){
   if(!game.user?.isGM)throw Error('Somente a Mestra pode montar o Anel.');
   if(!event?.duel)throw Error('Esta prova não usa o Duelo do Anel.');
-  const duelists=resolveDuelists(event,game.actors),scene=await ensureScene(event,DUEL_MAP,{game,SceneClass});
+  const duelists=resolveDuelists(event,game.actors);
+  for(const actor of duelists)if(actor.hasPlayerOwner&&!state?.memberships?.some(m=>m.actorId===actor.id))throw Error(`${actor.name} precisa se inscrever no Coliseu antes de participar.`);
+  const scene=await ensureScene(event,DUEL_MAP,{game,SceneClass});
   const oldTokens=rows(scene.tokens).filter(token=>token.flags?.[ID]?.arena?.eventId===event.id).map(token=>token.id);
   if(oldTokens.length)await scene.deleteEmbeddedDocuments('Token',oldTokens);
   const tokens=await scene.createEmbeddedDocuments('Token',await Promise.all(duelists.map((actor,side)=>tokenSource(actor,{...DUEL_MAP.spawns[side][0],side,eventId:event.id}))));
