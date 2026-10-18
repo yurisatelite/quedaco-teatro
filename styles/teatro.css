@@ -38,6 +38,9 @@
   .qt-card { border:1px solid var(--qt-line); background:var(--qt-panel); padding:20px; margin:12px 0; overflow-wrap:anywhere; }
   .qt-card.qt-muted { opacity:.55; filter:saturate(.55); }
   .qt-arena-preview { display:block; width:min(100%,460px); max-height:210px; object-fit:cover; object-position:center; border:1px solid var(--qt-gold); margin:0 0 16px; background:var(--qt-bg); }
+  .qt-entry-art { margin:0 0 16px; border:1px solid var(--qt-gold); background:var(--qt-bg); }
+  .qt-entry-art img { display:block; width:100%; max-height:300px; object-fit:cover; object-position:center; }
+  .qt-entry-art figcaption { padding:7px 10px; color:var(--qt-muted); font-size:11px; letter-spacing:.4px; }
   .qt-card>small { font:11px var(--font-sans,sans-serif); letter-spacing:.6px; }
   .qt-card details { border-left:3px solid var(--qt-red); padding:12px; background:var(--qt-bg); margin:16px 0; }
   .qt-card summary { cursor:pointer; color:var(--qt-gold); }

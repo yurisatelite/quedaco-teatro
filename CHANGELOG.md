@@ -1,3 +1,9 @@
+# 0.10.2
+
+- Declara Foundry 13 como versão verificada para remover o selo de compatibilidade desconhecida.
+- Adiciona imagem de entrada da Corrida dos Escorpiões separada do mapa tático.
+- A apresentação de cada modalidade agora aceita uma arte de portal/entrada além da miniatura da arena.
+
 # 0.10.1
 
 - NPCs do circuito agora enviam retrato e textura de Token ao Criador.
