@@ -172,7 +172,7 @@ export function createTheatreApp(store) {
           if(action==='event') {
             const teamA=s.teams.find(t=>t.id===values.teamA),teamB=s.teams.find(t=>t.id===values.teamB);
             if(teamA)values.a=teamA.name;if(teamB)values.b=teamB.name;
-            if(!values.a||!values.b)throw Error('Escolha equipes cadastradas ou escreva os dois nomes dos lados.');
+            values.a ||= 'Lado A'; values.b ||= 'Lado B';
             if(values.teamA&&values.teamA===values.teamB)throw Error('Uma equipe não pode enfrentar a si mesma.');
             addEvent(s,values);
           }

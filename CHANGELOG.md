@@ -1,3 +1,11 @@
+# 0.10.0
+
+- Reorganiza a identidade visual: QUEDAÇO como marca pequena e Teatro dos Condenados como título principal do Coliseu de Kravokia.
+- Inclui banner de Kravokia no Deserto de Mirmir e mantém o Dossiê exclusivamente na direção do mestre.
+- Simplifica a criação de provas: número sequencial, terreno, cotação e prêmio vêm de presets editáveis; lados e modalidade são o essencial.
+- Cards de apostadores tentam localizar Actors pelas tags estáveis do Teatro e exibem retratos quando as fichas já foram sincronizadas.
+- Documenta o esforço por frente e as decisões pendentes da próxima etapa.
+
 # 0.9.0
 
 - Inscrição colaborativa por personagem, com taxa única de 10 pilas, classes e retratos.

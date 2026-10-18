@@ -71,11 +71,15 @@ export function duelSetup(input) {
 }
 export function publicDuel(duel) {return {format:duel.format,victory:duel.victory,magic:duel.magic,weapons:duel.weapons,ringOut:duel.ringOut,deaths:duel.deaths,target:duel.target,roundLimit:duel.roundLimit,medics:duel.medics,score:[...duel.score],ringOuts:[...duel.ringOuts],phase:duel.phase};}
 export function addEvent(state, input, id = uid()) {
-  const name = required(input.name), sides = [required(input.a), required(input.b)];
-  if (sides[0].toLowerCase() === sides[1].toLowerCase()) throw Error('Os lados precisam ter nomes diferentes.');
-  const odds = [amount(input.oddsA, 1), amount(input.oddsB, 1)];
   const game=String(input.game);
-  state.events.push({id,name,game,sides,teamIds:[String(input.teamA ?? ''),String(input.teamB ?? '')],odds,terrain:String(input.terrain ?? ''),reward:String(input.reward ?? ''),visible:true,status:'open',winner:null,battle:game === 'Batalha de Equipes' ? battleSetup(input) : null,duel:game === 'Duelo do Anel' ? duelSetup(input) : null});
+  const presets = game === 'Duelo do Anel'
+    ? {terrain:'Anel de areia negra',reward:'60 pilas + direito de escolher a próxima arma',odds:[2,2]}
+    : {terrain:'Arena das bandeiras',reward:'120 pilas + tratamento completo para a equipe',odds:[1.8,2.2]};
+  const number = String(state.events.length + 1).padStart(6,'0');
+  const name = required(input.name || `${game} · ${number}`), sides = [required(input.a || 'Lado A'), required(input.b || 'Lado B')];
+  if (sides[0].toLowerCase() === sides[1].toLowerCase()) throw Error('Os lados precisam ter nomes diferentes.');
+  const odds = [amount(input.oddsA ?? presets.odds[0], 1), amount(input.oddsB ?? presets.odds[1], 1)];
+  state.events.push({id,name,game,sides,teamIds:[String(input.teamA ?? ''),String(input.teamB ?? '')],odds,terrain:String(input.terrain || presets.terrain),reward:String(input.reward || presets.reward),visible:true,status:'open',winner:null,battle:game === 'Batalha de Equipes' ? battleSetup(input) : null,duel:game === 'Duelo do Anel' ? duelSetup(input) : null});
 }
 export function addBettor(state, input, id = uid()) {
   const bankroll=amount(input.bankroll,0), debt=amount(input.debt,0);

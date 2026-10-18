@@ -20,7 +20,7 @@ try{
   await page.goto(`http://127.0.0.1:${server.address().port}`);
   await page.waitForSelector('[data-qt-action="publish"]');
   const tab=id=>page.click(`[data-qt-action="tab"][data-id="${id}"]`);
-  await tab('events');await page.fill('[name="name"]','Final das Dunas');await page.fill('[name="a"]','Escorpiões');await page.fill('[name="b"]','Caravaneiros');await page.fill('[name="reward"]','Uma relíquia');await page.click('button[type="submit"]');await page.waitForSelector('.qt-versus');assert.equal(await page.locator('.qt-arena-preview').count(),1);
+  await tab('events');await page.fill('[name="a"]','Escorpiões');await page.fill('[name="b"]','Caravaneiros');await page.fill('[name="reward"]','Uma relíquia');await page.click('button[type="submit"]');await page.waitForSelector('.qt-versus');assert.equal(await page.locator('.qt-arena-preview').count(),1);
   assert.match(await page.locator('#preview').innerText(),/Duelo do Anel|1 contra 1/);
   await tab('bets');await page.fill('[name="bettor"]','Ana');await page.fill('[name="stake"]','100');await page.click('button[type="submit"]');await page.waitForSelector('tbody tr');
   await tab('events');await page.click('[data-qt-action="settle"][data-winner="0"]');await page.waitForSelector('text=Vencedor: Escorpiões');
@@ -33,7 +33,7 @@ try{
   await page.evaluate(async()=>{globalThis.gmApp=previewApp;game.user={isGM:false};const {createStore}=await import('/src/store.mjs');const {createTheatreApp}=await import('/src/app.mjs');const App=createTheatreApp(createStore(game));previewApp=new App();await previewApp.render();});
   assert.equal(await page.locator('[data-qt-action="publish"]').count(),0);
   assert.match(await page.locator('#preview').innerText(),/As portas do Teatro dos Condenados estão abertas/);
-  await tab('dossier');await page.click('[data-qt-action="category"][data-id="npc"]');assert.match(await page.locator('#preview').innerText(),/Rask/);assert.doesNotMatch(await page.locator('#preview').innerText(),/Cada vitória apaga|Segredos e condução/);
+  assert.equal(await page.locator('[data-qt-action="tab"][data-id="dossier"]').count(),0);
   assert.equal(await page.locator('[data-qt-action="tab"][data-id="events"]').count(),0);
   await tab('membership');assert.match(await page.locator('#preview').innerText(),/10 pilas/);
   await page.screenshot({path:resolve(root,'output/jogadores.png'),fullPage:true});
