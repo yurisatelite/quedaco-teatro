@@ -141,6 +141,15 @@ export const CIRCUIT_NPCS=Object.freeze([
 }})));
 
 export function circuitNpc(key){return CIRCUIT_NPCS.find(row=>row.key===key)??null;}
+export function restoreCircuitLinks(state,actors){
+  const rows=Array.from(actors??[]),links=CIRCUIT_NPCS.flatMap(row=>{
+    const matches=rows.filter(actor=>actor.flags?.['quedaco-teatro']?.npc?.key===row.key||actor.flags?.[CREATOR_ID]?.npcModel?.id===row.model.id);
+    return matches.length===1?[{key:row.key,actorId:matches[0].id}]:[];
+  });
+  applyCircuitActorLinks(state,links);
+  for(const record of [...state.teams.flatMap(t=>t.members),...state.bettors,...(state.personnel??[])]){const actor=rows.find(a=>a.id===record.actorId);if(actor)record.img=actor.img;}
+  return state;
+}
 
 async function repairActorVisual(actor){
   if(!actor?.update)return;

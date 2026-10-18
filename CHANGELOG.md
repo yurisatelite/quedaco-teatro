@@ -1,3 +1,13 @@
+# 0.11.0
+
+- Menu ativo iluminado, jogos em duas colunas com mapas completos e gaveta de modalidades desativadas.
+- Apostadores ficam dentro de Apostas; Equipes e elenco compartilham menu, com criação recolhida e contagem de pendências. Dossiê por último.
+- Gera uma a quatro provas com NPCs vinculados, escalação visual, número e prêmios predefinidos, além de apostas automáticas dos apostadores com saldo disponível.
+- Provas simuladas dispensam Cena. Depois de encerrar apostas, sortear finaliza uma vez com pesos por fama, placar e motivo narrativo registrado.
+- Minhas apostas mostra resultados e resgate em pilas. A oferta de novas apostas de itens foi retirada da interface; bilhetes antigos continuam resgatáveis.
+- Recupera vínculos existentes pelas tags do Criador e publica retratos das equipes.
+- Explica o Dossiê como caderno do mestre e o Coliseu como dimensão de bolso com áreas de convivência e portais de disputa.
+
 # 0.10.4
 
 - A inscrição lê a classe real do Actor pelo Item de classe do Skyfall.

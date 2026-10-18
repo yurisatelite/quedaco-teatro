@@ -8,8 +8,8 @@ const server=createServer(async(req,res)=>{
   try{
     const pathname=new URL(req.url,'http://localhost').pathname;
     if(pathname==='/'){res.setHeader('Content-Type','text/html; charset=utf-8');res.end('<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width"><link rel="stylesheet" href="/styles/teatro.css"><style>body{margin:0;background:#171518}#preview{max-width:1120px;margin:auto}</style></head><body><section id="preview" class="quedaco-teatro"></section><script type="module" src="/tools/preview-world.mjs"></script></body></html>');return;}
-    const file=resolve(root,'.'+decodeURIComponent(pathname));if(!file.startsWith(root+sep))throw Error('outside');
-    res.setHeader('Content-Type',extname(file)==='.mjs'?'text/javascript; charset=utf-8':'text/css; charset=utf-8');res.end(await readFile(file));
+    const file=resolve(root,'.'+decodeURIComponent(pathname).replace(/^\/modules\/quedaco-teatro\//,'/'));if(!file.startsWith(root+sep))throw Error('outside');
+    res.setHeader('Content-Type',({'.mjs':'text/javascript; charset=utf-8','.css':'text/css; charset=utf-8','.png':'image/png','.jfif':'image/jpeg'})[extname(file)]||'application/octet-stream');res.end(await readFile(file));
   }catch{res.statusCode=404;res.end();}
 });
 await new Promise(r=>server.listen(0,'127.0.0.1',r));
@@ -19,12 +19,21 @@ try{
   page.on('pageerror',err=>errors.push(err.message));
   await page.goto(`http://127.0.0.1:${server.address().port}`);
   await page.waitForSelector('[data-qt-action="publish"]');
+  await page.click('[data-qt-action="tab"][data-id="games"]');
+  assert.equal(await page.locator('.qt-game-grid').first().locator('.qt-game-tile').count(),4);
+  assert.equal(await page.locator('.qt-drawer:not([open])').count(),1);
+  assert.equal(await page.locator('nav button').last().innerText(),'Dossiê');
   const tab=id=>page.click(`[data-qt-action="tab"][data-id="${id}"]`);
-  await tab('events');await page.fill('[name="a"]','Escorpiões');await page.fill('[name="b"]','Caravaneiros');await page.fill('[name="reward"]','Uma relíquia');await page.click('button[type="submit"]');await page.waitForSelector('.qt-versus');assert.equal(await page.locator('.qt-arena-preview').count(),1);
+  await page.evaluate(async()=>{
+    const {createStore}=await import('/src/store.mjs');const {installCircuit,CIRCUIT_NPCS}=await import('/src/roster.mjs');
+    game.actors=CIRCUIT_NPCS.map((r,i)=>({id:`a${i}`,name:r.model.name,type:'character',img:r.model.portrait,items:[],flags:{'quedaco-teatro':{npc:{key:r.key}}},hasPlayerOwner:false,testUserPermission:()=>false}));
+    await createStore(game).mutate(s=>installCircuit(s));
+  });
+  await tab('events');await page.fill('[name="reward"]','Uma relíquia');await page.click('button[type="submit"]');await page.waitForSelector('.qt-matchup');assert.equal(await page.locator('.qt-event-tile').count(),1);
   assert.match(await page.locator('#preview').innerText(),/Duelo do Anel|1 contra 1/);
   await tab('bets');await page.fill('[name="bettor"]','Ana');await page.fill('[name="stake"]','100');await page.click('button[type="submit"]');await page.waitForSelector('tbody tr');
-  await tab('events');await page.click('[data-qt-action="settle"][data-winner="0"]');await page.waitForSelector('text=Vencedor: Escorpiões');
-  await tab('bets');assert.match(await page.locator('tbody').innerText(),/Ganha/);assert.match(await page.locator('tbody').innerText(),/200/);
+  await tab('events');await page.click('[data-qt-action="lock"]');await page.click('[data-qt-action="simulate-event"]');await page.waitForSelector('.qt-result');
+  await tab('bets');assert.match(await page.locator('tbody').innerText(),/Ganha|Perdida/);
   await page.click('[data-qt-action="publish"]');
   await tab('overview');await mkdir(resolve(root,'output'),{recursive:true});await page.screenshot({path:resolve(root,'output/mestre.png'),fullPage:true});
   await page.click('[data-qt-action="preview"]');assert.equal(await page.locator('[data-qt-action="publish"]').count(),0);assert.doesNotMatch(await page.locator('#preview').innerText(),/SEGREDO|CAIXA DAS APOSTAS/);

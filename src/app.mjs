@@ -1,13 +1,15 @@
 import {ID, TITLE, publicState, addEvent, addBettor, placeBet, recordBattle, recordDuel, settleEvent, startBattle, startDuel, required, amount, uid, escape as e} from './model.mjs';
 import {renderView} from './view.mjs';
 import {characterSummary,ownedCharacter,eligibleNpc} from './membership.mjs';
+import {createCircuitEvent,finishSimulation} from './circuit.mjs';
+import {restoreCircuitLinks} from './roster.mjs';
 export function createTheatreApp(store) {
   return class TheatreApp extends foundry.applications.api.ApplicationV2 {
     static DEFAULT_OPTIONS = {id:ID,classes:['quedaco-teatro'],window:{title:'QT.Title',icon:'fa-solid fa-masks-theater',resizable:true},position:{width:1120,height:790}};
     tab='overview'; category='place'; query=''; preview=false; notice=''; busy=false; dirty=false; revision=0;
     async _renderHTML() {
       const gm=game.user.isGM, published=store.published();
-      const source=gm?store.read():null;
+      const source=gm?restoreCircuitLinks(store.read(),game.actors):null;
       this.revision=source?.revision;
       const actors=!this.preview?Array.from(game.actors ?? []).filter(actor=>gm||ownedCharacter(actor,game.user)).map(actor=>({...characterSummary(actor),npc:eligibleNpc(actor)})).sort((a,b)=>a.name.localeCompare(b.name,'pt-BR')):[];
       return renderView({state:gm?(this.preview?publicState(source):source):published,gm,preview:this.preview,tab:this.tab,category:this.category,query:this.query,notice:this.notice,published,actors});
@@ -15,7 +17,7 @@ export function createTheatreApp(store) {
     _replaceHTML(result,content) {content.innerHTML=result;}
     _onRender(context,options) {
       super._onRender(context,options);
-      for(const input of this.element.querySelectorAll('input[name="role"]')){
+      for(const input of this.element.querySelectorAll('input[name="role"]:not([type="hidden"])')){
         const select=document.createElement('select');select.name='role';for(const role of ['Combatente','Especialista','Ocultista']){const option=document.createElement('option');option.value=role;option.textContent=role;select.append(option);}input.replaceWith(select);
       }
       const sponsorInput=this.element.querySelector('input[name="sponsor"]');
@@ -72,8 +74,9 @@ export function createTheatreApp(store) {
         }else{
           this.requireGM();
           if(this.dirty)throw Error('Salve os campos do formulário antes de usar esta ação.');
-          if(action==='publish') {await store.publish();this.notice='Cartaz publicado. A apresentação foi aberta para os jogadores conectados.';}
+          if(action==='publish') {await store.mutate(s=>restoreCircuitLinks(s,game.actors),this.revision);await store.publish();this.notice='Cartaz publicado. A apresentação foi aberta para os jogadores conectados.';}
           else if(action==='withdraw') {await store.withdraw();this.notice='Apresentação fechada. Informações já vistas não podem ser desfeitas.';}
+          else if(action==='simulate-event') {await store.mutate(s=>finishSimulation(s,id),this.revision);if(store.published())await store.publish();this.notice='Resultado publicado e apostas liquidadas. Os jogadores já podem resgatar.';}
           else if(action==='open-actor') {const actor=game.actors?.get(target.dataset.actorId);if(!actor)throw Error('Actor indisponível.');actor.sheet?.render(true);return;}
           else if(action==='open-actor-folder') {ui.actors?.render(true);this.notice='Abra a pasta Teatro dos Condenados no diretório de Actors. Os NPCs podem ser arrastados dela para qualquer Cena.';}
           else if(action==='prepare-game-map') {
@@ -156,6 +159,7 @@ export function createTheatreApp(store) {
             },this.revision);
           }
         }
+        if(target.dataset.qtAction==='lock'&&store.published())await store.publish();
         this.dirty=false;await this.render({force:true});
       }finally{this.busy=false;}
     }
@@ -169,6 +173,12 @@ export function createTheatreApp(store) {
         const data=new FormData(form),values=Object.fromEntries(data), action=form.dataset.qtForm;
         values.side0ActorIds=data.getAll('side0ActorIds');values.side1ActorIds=data.getAll('side1ActorIds');
         await store.mutate(async s=>{
+          if(action==='circuit-events'){
+            restoreCircuitLinks(s,game.actors);
+            const count=Number(values.count);if(!Number.isInteger(count)||count<1||count>4)throw Error('Escolha de uma a quatro provas.');
+            if(values.mode==='table'&&!['Duelo do Anel','Batalha de Equipes'].includes(values.game))throw Error('Corrida e Silêncio usam simulação nesta rodada.');
+            for(let i=0;i<count;i++)createCircuitEvent(s,values,{actors:Array.from(game.actors??[])});
+          }
           if(action==='event') {
             const teamA=s.teams.find(t=>t.id===values.teamA),teamB=s.teams.find(t=>t.id===values.teamB);
             if(teamA)values.a=teamA.name;if(teamB)values.b=teamB.name;

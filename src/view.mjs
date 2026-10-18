@@ -1,5 +1,28 @@
 import {escape as e, money, reputation} from './model.mjs';
 import {membershipPanel} from './member-view.mjs';
+import {gameCards,eventCards,eventBuilder,bettorTiles,playerBetForms} from './circuit-view.mjs';
+export function renderView(options){
+  let html=renderLegacyView(options);const {state:s,gm=false,preview=false,tab='overview',notice='',actors=[]}=options;
+  if(!s)return html;const manage=gm&&!preview;
+  const allowed=manage||preview||actors.some(a=>s.memberships?.some(m=>m.actorId===a.id));
+  let content;
+  html=html.replace(/<button[^>]*data-id="(?:bettors|roster)"[^>]*>[\s\S]*?<\/button>/g,'');
+  html=html.replace(/(<button[^>]*data-id="teams"[^>]*>)[\s\S]*?<\/button>/,'$1Equipes e elenco</button>');
+  const dossierButton=html.match(/<button[^>]*data-id="dossier"[^>]*>[\s\S]*?<\/button>/)?.[0];if(dossierButton)html=html.replace(dossierButton,'').replace('</nav>',`${dossierButton}</nav>`);
+  if(allowed)html=html.replace(dossierButton||'</nav>',`<button type="button" data-qt-action="tab" data-id="my-bets" aria-pressed="${tab==='my-bets'}">Minhas apostas</button>${dossierButton||'</nav>'}`);
+  if(tab==='bets'&&manage)content=`${betPanel(s)}<details class="qt-drawer"><summary>Apostadores do Coliseu · ${s.bettors.length}</summary>${bettorTiles(s,actors)}<details><summary>Cadastrar novo apostador</summary>${bettorPanel({...s,bettors:[]},actors)}</details></details>`;
+  if(tab==='teams'&&manage){const records=[...s.teams.flatMap(t=>t.members),...s.bettors,...(s.personnel??[])],pending=records.filter(r=>!r.actorId||!actors.some(a=>a.id===r.actorId));content=`<h2>Equipes de participação</h2><p>Inscritos podem participar individualmente ou formar uma equipe. O elenco reúne as fichas necessárias a cada função.</p><details class="qt-drawer"><summary>Elenco · ${pending.length?`${pending.length} fichas pendentes`:'Tudo pronto · nenhuma criação pendente'}</summary>${pending.length||!s.rosterInstalled?rosterPanel(s):'<p>Todas as fichas estão vinculadas. Não é necessário criar novamente.</p>'}</details>${teamPanel(s,actors)}`;}
+  if(tab==='my-bets'&&allowed)content=`<h2>Minhas apostas</h2><p>Aposte pilas nas provas abertas. Vitórias e devoluções podem ser resgatadas na ficha.</p>${actors.filter(a=>s.memberships?.some(m=>m.actorId===a.id)).map(a=>`<article class="qt-card"><h3>${e(a.name)}</h3>${(s.playerBets??s.bets??[]).filter(b=>b.actorId===a.id).map(b=>`<p><span class="qt-badge">${e({pending:'Aguardando resultado',won:'Ganhou',lost:'Perdeu',refunded:'Devolvida'}[b.status])}</span> ${e(s.events.find(ev=>ev.id===b.eventId)?.name??'Prova')} · ${money(b.stake)} pilas · retorno ${money(b.payout)} ${b.claimed?'· Resgatado':''}</p>`).join('')||'<p>Você ainda não apostou.</p>'}<form data-qt-form="member"><input type="hidden" name="action" value="claim"><input type="hidden" name="actorId" value="${e(a.id)}"><button type="submit">Resgatar ganhos em dinheiro</button></form></article>`).join('')||'<p>Inscreva um personagem para apostar.</p>'}`;
+  if(tab==='games'&&allowed)content=gameCards(s,manage);
+  if(tab==='events'&&allowed)content=`<h2>Provas do Coliseu</h2><p>Escolha sua torcida, acompanhe o resultado e resgate seus ganhos em Minhas apostas.</p>${eventCards(s,manage)}${manage?eventBuilder(s):''}`;
+  if(tab==='overview')content=`<section class="qt-hero"><small>COLISEU DE KRAVOKIA · DIMENSÃO DE BOLSO</small><h2>Teatro dos Condenados</h2><p>Um encontro entre dimensões. Escolha seu portal, sua equipe e sua sorte.</p></section><article class="qt-card"><small>VOZ DAS ARAUTAS</small><p>${e(s.announcement)}</p></article><h2>Próximas provas</h2>${allowed?eventCards(s,manage):'<p>Inscreva seu personagem para acessar as provas e apostas.</p>'}`;
+  if(tab==='dossier'&&manage)html=html.replace('<h2>Dossiê do Coliseu</h2>','<h2>Dossiê do Coliseu · caderno do mestre</h2><article class="qt-card"><span class="qt-badge">Dimensão de bolso</span><p>O Teatro reúne uma área central de convivência e portais para dimensões de disputa. Praça das Caravanas, mercado e guichês são locais narrativos dessa área central; ainda não possuem cenas ou mapas próprios. Cada jogo possui seu mapa de arena, acessível pelo portal.</p><p>Use estes registros como descrições, contatos e segredos para narrar. As marcações de publicação selecionam textos do cartaz; o Dossiê completo permanece reservado ao mestre.</p></article>');
+  if(tab==='my-bets'&&allowed){content+=playerBetForms(s,actors);html=html.replace(/(data-id="overview" aria-pressed=")true/, '$1false');}
+  if(content)html=html.replace(/<main>[\s\S]*?<p class="qt-notice"/,`<main>${content}<p class="qt-notice"`);
+  if(tab==='bettors')html=html.replace(/<h2>Apostadores do Coliseu<\/h2>[\s\S]*?<form data-qt-form="bettor">/,'<details class="qt-drawer"><summary>Cadastrar apostador</summary><form data-qt-form="bettor">').replace('</form><p class="qt-notice"','</form></details><p class="qt-notice"');
+  html=html.replace(/<details><summary>Apostar equipamentos ou consumíveis<\/summary>[\s\S]*?<\/details>/g,'');
+  return html;
+}
 export const CATEGORIES={place:'Lugares',npc:'Personagens',game:'Jogos',faction:'Facções',hook:'Aventuras',rule:'Funcionamento'};
 const btn=(a,l,x='')=>`<button type="button" data-qt-action="${a}" ${x}>${l}</button>`;
 const field=(n,l,v='',t='text',x='')=>`<label>${l}<input name="${n}" type="${t}" value="${e(v)}" ${x}></label>`;
@@ -13,7 +36,7 @@ const betStatus={pending:'Pendente',won:'Ganha',lost:'Perdida',refunded:'Devolvi
 const battleLabel={objetivos:'Objetivos',eliminação:'Eliminação',rendição:'Rendição',tempo:'Tempo'};
 const duelLabel={rendição:'Rendição',desarme:'Desarme',incapacidade:'Incapacidade',pontos:'Pontos',tempo:'Decisão por tempo'};
 const arenaPreview='modules/quedaco-teatro/assets/maps/quedaco-teatro-areia-prova-v1.png';
-export function renderView({state:s,gm=false,preview=false,tab='overview',category='place',query='',notice='',published=null,actors=[]}) {
+function renderLegacyView({state:s,gm=false,preview=false,tab='overview',category='place',query='',notice='',published=null,actors=[]}) {
   const manage=gm&&!preview;
   const registered=actors.some(a=>(s?.memberships??[]).some(m=>m.actorId===a.id));
   if(s&&!manage&&!registered&&!preview)s={...s,events:[],bettingActivity:[],entries:s.entries.filter(row=>row.category!=='game')};

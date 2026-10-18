@@ -41,7 +41,8 @@ export function publicState(state) {
     enrollments:(state.enrollments??[]).map(i=>({eventId:i.eventId,actorId:i.actorId,name:i.name})),
     bettingActivity:state.bets.filter(b=>b.eventId&&state.events.some(ev=>ev.id===b.eventId&&eventVisible(ev))).map(b=>({name:b.bettor,actorId:b.actorId??'',eventId:b.eventId,stake:b.stake,status:b.status})),
     entries:state.entries.filter(e => e.revealed).map(e => ({id:e.id, category:e.category, name:e.name, text:e.text})),
-    events:state.events.filter(eventVisible).map(e => ({id:e.id, name:e.name, game:e.game, sides:[...e.sides], terrain:e.terrain, reward:e.reward, status:e.status, winner:e.winner, odds:[...e.odds], battle:e.battle ? publicBattle(e.battle) : null, duel:e.duel ? publicDuel(e.duel) : null})),
+    events:state.events.filter(eventVisible).map(e => ({id:e.id, name:e.name, game:e.game, sides:[...e.sides], terrain:e.terrain, reward:e.reward, status:e.status, winner:e.winner, odds:[...e.odds],mode:e.mode,lineup:e.lineup?.map(side=>side.map(m=>({actorId:m.actorId,name:m.name,img:m.img,role:m.role}))),result:e.result?{winner:e.result.winner,score:[...e.result.score],reason:e.result.reason,draw:e.result.draw,total:e.result.total,weights:[...e.result.weights]}:null, battle:e.battle ? publicBattle(e.battle) : null, duel:e.duel ? publicDuel(e.duel) : null})),
+    playerBets:state.bets.filter(b=>b.actorId).map(b=>({id:b.id,actorId:b.actorId,eventId:b.eventId,side:b.side,stake:b.stake,status:b.status,payout:b.payout,claimed:Boolean(b.claimed)})),
     teams:state.teams.filter(t => t.visible).map(t => ({id:t.id, name:t.name, fame:t.fame,ownerActorId:t.ownerActorId??'',open:Boolean(t.open), members:(t.members ?? []).map(m => ({actorId:m.actorId,name:m.name,img:m.img, role:m.role}))}))
   };
 }

@@ -1,5 +1,15 @@
 # QUEDAÇO - O Teatro dos Condenados
 
+## Rodadas de NPCs (0.11.0)
+
+Em **Equipes e elenco**, abra a gaveta de elenco para resolver fichas pendentes. A geração de rodadas exige duas equipes com Actors de NPC vinculados; ela não cria fichas fictícias. Os apostadores ficam na gaveta de **Apostas**. Cada um usa seu caixa do livro do Coliseu, separado da bolsa do Actor.
+
+Em **Provas**, escolha modalidade, quantidade (1–4) e condução. A escalação e os bilhetes dos apostadores são gerados automaticamente. Use **Mostrar para os jogadores**, deixe os jogadores apostarem pilas em **Minhas apostas**, encerre as apostas e clique **Sortear e finalizar**. Encerramento e resultado atualizam o cartaz publicado. Cada jogador consulta os bilhetes e resgata na própria ficha, com um mestre conectado.
+
+Simulações usam uma regra autoral: peso de cada equipe = 10 + fama (mínimo 1); um sorteio escolhe o vencedor, com placar e motivo narrativo. Não executam regras de combate Skyfall nem consomem recursos das fichas. O modo **Na mesa** prepara Cena e iniciativa para Duelo/Batalha; Corrida e Silêncio possuem simulação e mapas de referência.
+
+O Dossiê é um caderno privado do mestre. Praça, mercado e guichês descrevem o espaço central da dimensão de bolso e ainda não têm mapas próprios. Cada portal conduz à dimensão de uma modalidade. Os retratos atuais do circuito compartilham arte provisória; retratos individuais ainda precisam ser produzidos ou atribuídos nas fichas.
+
 Versão 0.9.0 para Foundry VTT 13. Conteúdo autoral de campanha situado em Kravokia e no Deserto de Mirmir, para uso com Skyfall RPG. Personagens, instituições, provas e mistérios são propostas da campanha, não afirmações de cânone. Não inclui texto de livros ou fichas oficiais.
 
 ## Inscrição dos jogadores

@@ -1,4 +1,4 @@
-@layer modules {
+/* Foundry 13: keep scoped rules unlayered so system form defaults cannot override them. */
   .quedaco-teatro { --qt-bg:#171518; --qt-panel:#242024; --qt-line:#514048; --qt-gold:#ebc58b; --qt-text:#f1e5d8; --qt-muted:#c2afa6; --qt-red:#813843; color:var(--qt-text); font-family:var(--font-body,Georgia,serif); }
   .quedaco-teatro .window-content { padding:0; background:var(--qt-bg); overflow:auto; color:var(--qt-text); }
   .qt-shell { min-height:100%; background:var(--qt-bg); color:var(--qt-text); }
@@ -19,6 +19,34 @@
   .qt-layout aside>small { font-size:10px; letter-spacing:1px; color:var(--qt-muted); }
   .qt-layout nav { display:grid; gap:8px; margin:20px 0 45px; }
   .qt-layout nav button { text-align:left; }
+  .quedaco-teatro .qt-layout nav button[aria-pressed="true"] { background:#a7612f!important; color:#fff4d9!important; border-color:#f6ce80!important; box-shadow:inset 4px 0 #ffe5a4,0 0 12px #a7612f44; }
+  .quedaco-teatro .qt-builder { display:block!important; }
+  .quedaco-teatro .qt-builder-grid { display:grid!important; grid-template-columns:repeat(auto-fit,minmax(210px,1fr))!important; gap:16px; }
+  .quedaco-teatro .qt-builder label { display:grid!important; }
+  .quedaco-teatro .qt-builder select,.quedaco-teatro .qt-builder input { color:#f1e5d8!important;background:#171518!important; }
+  .qt-badge { display:inline-block; padding:5px 9px; border:1px solid #8d6949; color:#eac897; background:#3b2b23; border-radius:14px; font:12px sans-serif; margin:3px 0; }
+  .qt-state-open { background:#1f473c;color:#a3efd2;border-color:#407a68; }
+  .qt-state-closed { background:#51401d;color:#ffe1a0; }
+  .qt-state-settled { background:#283b54;color:#b6daff; }
+  .qt-game-grid { display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px; }
+  .qt-game-tile,.qt-event-tile { border:1px solid var(--qt-line);background:var(--qt-panel);border-radius:10px;overflow:hidden; }
+  .qt-game-tile>img { display:block;width:100%;height:auto;aspect-ratio:3/2;object-fit:contain;background:#171518; }
+  .qt-game-tile>div { padding:16px; }
+  .qt-game-tile details img { width:100%; }
+  .qt-drawer { margin-top:28px;padding:18px;border:1px dashed var(--qt-line);border-radius:8px; }
+  .qt-drawer summary { cursor:pointer;color:var(--qt-muted);margin-bottom:12px; }
+  .qt-event-tile { padding:18px;margin:16px 0; }
+  .qt-event-tile>header { display:flex;gap:16px;align-items:center; }
+  .qt-event-tile>header>img { width:140px;height:95px;object-fit:cover;border-radius:8px; }
+  .qt-matchup { display:grid;grid-template-columns:1fr auto 1fr;gap:20px;align-items:center;text-align:center;padding:12px 0; }
+  .qt-matchup section { min-width:0; }
+  .qt-lineup { display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin:12px 0; }
+  .qt-lineup-person { display:grid;gap:5px;justify-items:center;max-width:105px;font-size:12px; }
+  .qt-lineup-person img { width:64px;height:64px;object-fit:cover;border:2px solid var(--qt-gold);border-radius:50%; }
+  .qt-vs,.qt-reward { color:var(--qt-gold); }
+  .qt-result { background:#20362d;border-left:4px solid #8dc8a8;padding:12px;margin:12px 0; }
+  .qt-event-tile .qt-actions { padding-top:12px;border-top:1px solid var(--qt-line); }
+  @media(max-width:650px){.qt-game-grid{grid-template-columns:1fr}.qt-matchup{gap:8px}.qt-event-tile>header>img{width:90px;height:70px}.qt-lineup-person img{width:48px;height:48px}}
   .qt-layout aside p { color:var(--qt-muted); font-style:italic; font-size:13px; line-height:1.6; }
   .qt-layout main { padding:26px; min-width:0; }
   .qt-shell h2,.qt-shell h3 { color:var(--qt-gold); border:0; font-family:var(--font-h1,Georgia,serif); }
@@ -83,4 +111,3 @@
   .qt-shell [hidden] { display:none!important; }
   @media(max-width:650px) { .qt-layout{grid-template-columns:1fr}.qt-layout aside{padding:12px;border-right:0;border-bottom:1px solid var(--qt-line)}.qt-layout aside>p{display:none}.qt-layout nav{display:flex;flex-wrap:wrap;margin:10px 0}.qt-layout main{padding:16px}.qt-top{padding:16px;flex-wrap:wrap}.qt-fields{grid-template-columns:1fr}.qt-toolbar{padding:12px}.qt-hero{padding:22px}.qt-hero p{max-width:100%}.qt-versus strong{font-size:16px} }
   @media(prefers-reduced-motion:reduce) { .qt-shell *{animation:none!important;transition:none!important} }
-}
