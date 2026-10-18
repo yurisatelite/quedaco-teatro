@@ -1,3 +1,9 @@
+# 0.10.4
+
+- A inscrição lê a classe real do Actor pelo Item de classe do Skyfall.
+- O seletor de classe só aparece como recuperação quando a ficha não possui Combatente, Especialista ou Ocultista reconhecível.
+- Cards de personagens foram reduzidos e organizados em uma grade vertical compacta.
+
 # 0.10.3
 
 - Corrige os 40 modelos que enviavam pertences como texto ao Criador. Agora enviam uma lista de itens, compatível com a biografia e o inventário narrativo.

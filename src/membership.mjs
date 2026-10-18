@@ -4,7 +4,7 @@ export const physicalTypes=new Set(['weapon','armor','clothing','equipment','con
 // Skyfall calls its threat document type "npc". Social NPCs use character sheets.
 export function eligibleNpc(actor){return actor?.type==='character'&&!actor.hasPlayerOwner;}
 export function ownedCharacter(actor,user){return actor?.type==='character'&&actor.testUserPermission(user,'OWNER');}
-export function characterSummary(actor){return {id:actor.id,uuid:actor.uuid,name:actor.name,img:actor.img,type:actor.type,player:Boolean(actor.hasPlayerOwner),cash:Number(actor.system?.currency?.p??0),items:Array.from(actor.items??[]).filter(i=>physicalTypes.has(i.type)).map(i=>({id:i.id,name:i.name,type:i.type,img:i.img,price:Number(i.system?.price??0),quantity:Number(i.system?.quantity??1)}))};}
+export function characterSummary(actor){const items=Array.from(actor.items??[]);const classItem=items.find(i=>i.type==='class'&&i.system?.initial)??items.find(i=>i.type==='class');return {id:actor.id,uuid:actor.uuid,name:actor.name,img:actor.img,type:actor.type,player:Boolean(actor.hasPlayerOwner),className:String(classItem?.name??actor.system?.characterClass??''),cash:Number(actor.system?.currency?.p??0),items:items.filter(i=>physicalTypes.has(i.type)).map(i=>({id:i.id,name:i.name,type:i.type,img:i.img,price:Number(i.system?.price??0),quantity:Number(i.system?.quantity??1)}))};}
 export async function processMemberRequest(state,input,{game,user,requestId}){
   state.memberships??=[];state.invitations??=[];state.enrollments??=[];state.memberRequests??=[];
   if(state.memberRequests.includes(requestId))return;

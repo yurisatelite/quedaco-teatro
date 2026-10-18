@@ -47,6 +47,14 @@
   .qt-prose { white-space:pre-wrap; }
   .qt-actions,.qt-chips { display:flex; flex-wrap:wrap; gap:8px; }
   .qt-actor-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(155px,1fr)); gap:9px; margin:14px 0; }
+  .qt-member-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(230px,1fr)); gap:12px; align-items:start; margin-top:14px; }
+  .qt-member-card { margin:0; padding:12px; min-width:0; }
+  .qt-member-head { display:flex; align-items:center; gap:10px; min-height:54px; }
+  .qt-member-head img { width:54px; height:54px; object-fit:cover; border:1px solid var(--qt-gold); border-radius:4px; }
+  .qt-member-head div { display:grid; gap:4px; min-width:0; }
+  .qt-member-head b { overflow-wrap:anywhere; }
+  .qt-member-card form { margin:10px 0 0; padding:10px; }
+  .qt-member-card details { margin:10px 0; }
   .qt-actor-card,.qt-actor-missing { display:flex!important; align-items:center; gap:9px; min-height:58px!important; padding:6px!important; text-align:left; }
   .qt-actor-card { cursor:grab!important; }
   .qt-actor-card:active { cursor:grabbing!important; }
