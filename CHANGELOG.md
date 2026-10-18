@@ -1,3 +1,8 @@
+# 0.10.1
+
+- NPCs do circuito agora enviam retrato e textura de Token ao Criador.
+- A sincronização também repara Actors já existentes que ficaram com `mystery-man` ou sem textura, sem duplicar fichas.
+
 # 0.10.0
 
 - Reorganiza a identidade visual: QUEDAÇO como marca pequena e Teatro dos Condenados como título principal do Coliseu de Kravokia.

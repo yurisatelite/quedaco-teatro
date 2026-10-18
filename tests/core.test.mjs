@@ -87,7 +87,7 @@ test('modelos do circuito são detalhados, estáveis e a sincronização não du
   assert.equal(CIRCUIT_NPCS.length,40);
   assert.equal(new Set(CIRCUIT_NPCS.map(row=>row.model.id)).size,40);
   for(const row of CIRCUIT_NPCS){
-    assert.match(row.model.appearance,/./);assert.match(row.model.routine,/./);assert.match(row.model.desire,/./);assert.ok(row.model.possessions.length>=3);
+    assert.match(row.model.appearance,/./);assert.match(row.model.routine,/./);assert.match(row.model.desire,/./);assert.ok(row.model.possessions.length>=3);assert.match(row.model.portrait,/modules\/quedaco-teatro\/assets\/npc\/);assert.equal(row.model.token,row.model.portrait);
     assert.equal(row.model.sourceModule,'quedaco-teatro');assert.ok(row.model.tags.includes('circuito-inicial'));
     assert.deepEqual(row.model.featPriority.slice(0,2),['Combate com uma arma','Façanha com uma arma']);
   }

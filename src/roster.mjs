@@ -2,6 +2,8 @@ import {clone, uid} from './model.mjs';
 
 export const CREATOR_ID='quedaco-personagens-skyfall-rpg';
 const slug=value=>String(value).normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/(^-|-$)/g,'');
+const NPC_PORTRAIT='modules/quedaco-teatro/assets/npc/teatro-portrait-arena.png';
+const NPC_TOKEN=NPC_PORTRAIT;
 export const npcKey=name=>slug(name);
 
 // Conteúdo autoral pronto para mesa. As fichas são geradas pelo Criador de
@@ -111,7 +113,7 @@ const COMPETITOR_PROPS={
 function template({key,name,job,appearance,clothes,behavior,voice,routine,desire,fear,secret,hook,tactics,possessions,cash,relations=[]}){
   // Anuro/Bufonin, Combatente e Militar são entradas verificadas pelo Criador.
   // A preparação ainda consulta os compêndios instalados antes de gravar a ficha.
-  return {id:`teatro:${key}`,name,level:1,cash,legacy:'Anuro',heritage:'Bufonin',characterClass:'Combatente',background:'Militar',attributes:{str:1,dex:1,con:1,int:0,wis:1,cha:0},inventory:[],possessions,skillPriority:['athletics','perception'],languagePriority:[],featPriority:['Combate com uma arma','Façanha com uma arma','Ataque Poderoso'],relations,job,appearance,clothes,behavior,voice,routine,desire,fear,secret,hook,tactics};
+  return {id:`teatro:${key}`,name,portrait:NPC_PORTRAIT,token:NPC_TOKEN,level:1,cash,legacy:'Anuro',heritage:'Bufonin',characterClass:'Combatente',background:'Militar',attributes:{str:1,dex:1,con:1,int:0,wis:1,cha:0},inventory:[],possessions,skillPriority:['athletics','perception'],languagePriority:[],featPriority:['Combate com uma arma','Façanha com uma arma','Ataque Poderoso'],relations,job,appearance,clothes,behavior,voice,routine,desire,fear,secret,hook,tactics};
 }
 
 /** Modelos detalhados, idempotentes e prontos para a API do Criador. */
@@ -138,6 +140,13 @@ export const CIRCUIT_NPCS=Object.freeze([
 
 export function circuitNpc(key){return CIRCUIT_NPCS.find(row=>row.key===key)??null;}
 
+async function repairActorVisual(actor){
+  if(!actor?.update)return;
+  const portrait=actor.img&& !String(actor.img).includes('mystery-man') ? actor.img : NPC_PORTRAIT;
+  const token=actor.prototypeToken?.texture?.src && !String(actor.prototypeToken.texture.src).includes('mystery-man') ? actor.prototypeToken.texture.src : NPC_TOKEN;
+  await actor.update({img:portrait,'prototypeToken.texture.src':token,'prototypeToken.name':actor.name});
+}
+
 /** Cria as fichas pela API oficial e devolve vínculos, sem tocar no estado do Teatro. */
 export async function createCircuitActors(creator,{game=globalThis.game,onProgress=()=>{}}={}){
   const batchAvailable=Boolean(creator?.capabilities?.npcBatch&&typeof creator.prepareNpcBatch==='function'&&typeof creator.createNpcBatch==='function');
@@ -155,6 +164,7 @@ export async function createCircuitActors(creator,{game=globalThis.game,onProgre
       const row=CIRCUIT_NPCS.find(candidate=>candidate.model.id===item.id);if(!row)continue;
       const actor=await globalThis.fromUuid?.(item.actorUuid)??Array.from(game.actors??[]).find(candidate=>candidate.uuid===item.actorUuid);
       if(!actor)throw Error(`${item.name}: a ficha foi criada, mas não pôde ser vinculada ao Teatro.`);
+      await repairActorVisual(actor);
       const tag={key:row.key,kind:row.kind,teamName:row.teamName??'',role:row.role??'',registeredAt:Date.now()};
       await actor.setFlag?.('quedaco-teatro','npc',tag);
       if(row.kind==='competitor')await actor.setFlag?.('quedaco-teatro','competitor',{teamName:row.teamName,role:row.role,registeredAt:tag.registeredAt});
@@ -172,6 +182,7 @@ export async function createCircuitActors(creator,{game=globalThis.game,onProgre
     const result=await creator.createNpcFromTemplate(row.model,{expectedSignature:preview.signature});
     const actor=await globalThis.fromUuid?.(result.actorUuid)??Array.from(game.actors??[]).find(candidate=>candidate.uuid===result.actorUuid);
     if(!actor)throw Error(`${row.model.name}: a ficha foi criada, mas não pôde ser vinculada ao Teatro.`);
+    await repairActorVisual(actor);
     const tag={key:row.key,kind:row.kind,teamName:row.teamName??'',role:row.role??'',registeredAt:Date.now()};
     await actor.setFlag?.('quedaco-teatro','npc',tag);
     if(row.kind==='competitor')await actor.setFlag?.('quedaco-teatro','competitor',{teamName:row.teamName,role:row.role,registeredAt:tag.registeredAt});
