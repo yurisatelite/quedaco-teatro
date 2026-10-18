@@ -8,6 +8,7 @@ test('rodadas usam fichas de NPC, geram apostas solventes e finalizam uma única
  const s=normalizeState(initialState(CATALOG));installCircuit(s);
  const actors=CIRCUIT_NPCS.map((row,i)=>({id:`a${i}`,name:row.model.name,img:row.model.portrait,flags:{'quedaco-personagens-skyfall-rpg':{npcModel:{id:row.model.id}}}}));restoreCircuitLinks(s,actors);
  for(const game of Object.keys(PRESETS)){
+  s.entries.find(row=>row.name===game&&row.category==='game').revealed=true;
   const ev=createCircuitEvent(s,{game},{actors,random:()=>.2});assert.equal(ev.lineup[0].length,PRESETS[game].size);assert.ok(s.bets.some(b=>b.eventId===ev.id));
   assert.throws(()=>finishSimulation(s,ev.id));ev.status='closed';const result=finishSimulation(s,ev.id,{random:()=>.1});assert.equal(result.winner,0);assert.equal(ev.status,'settled');
   const treasury=s.treasury;assert.throws(()=>finishSimulation(s,ev.id));assert.equal(s.treasury,treasury);

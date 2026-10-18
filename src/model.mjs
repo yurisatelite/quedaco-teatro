@@ -1,6 +1,6 @@
 export const ID = 'quedaco-teatro';
 export const TITLE = 'QUEDAÇO - O Teatro dos Condenados';
-export const ACTIVE_GAME_IDS = new Set(['duelo','equipes','corrida','silencio']);
+export const ACTIVE_GAME_IDS = new Set(['duelo']);
 export const clone = value => structuredClone(value);
 export const uid = () => globalThis.crypto.randomUUID().replaceAll('-', '').slice(0, 16);
 export const escape = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -22,6 +22,9 @@ export function initialState(catalog) {
 export function normalizeState(state) {
   state.schema ??= 1; state.events ??= []; state.bets ??= []; state.teams ??= []; state.bettors ??= []; state.personnel ??= []; state.contracts ??= []; state.rosterInstalled ??= false;state.gameScenes??={};state.memberships??=[];state.invitations??=[];state.enrollments??=[];state.memberRequests??=[];
   if(!state.gameVisibilityInitialized){for(const entry of state.entries??[])if(entry.category==='game')entry.revealed=ACTIVE_GAME_IDS.has(entry.id);state.gameVisibilityInitialized=true;}
+  // Aplica o foco no Anel também a mundos que já liberavam os quatro portais.
+  // Uma única migração permite que o mestre volte a liberar modalidades no futuro.
+  if(!state.duelFocusInitialized){for(const entry of state.entries??[])if(entry.category==='game')entry.revealed=entry.id==='duelo';state.duelFocusInitialized=true;}
   for (const team of state.teams) { team.members ??= []; team.visible ??= false; team.fame ??= 0; team.sponsor ??= ''; }
   for (const event of state.events) {
     event.status ??= 'open'; event.visible ??= true; event.winner ??= null;

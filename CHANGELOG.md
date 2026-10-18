@@ -1,3 +1,8 @@
+# 0.11.1
+
+- Deixa apenas Duelo do Anel ativo por padrão, inclusive em mundos já configurados. Outras modalidades ficam na gaveta de desativadas e somem do cartaz após publicar novamente.
+- A criação de rodadas respeita as modalidades ativas; provas, bilhetes e mapas anteriores são preservados.
+
 # 0.11.0
 
 - Menu ativo iluminado, jogos em duas colunas com mapas completos e gaveta de modalidades desativadas.

@@ -7,6 +7,7 @@ export const PRESETS={
 };
 export function createCircuitEvent(state,input,{actors=[],random=Math.random}={}){
   const preset=PRESETS[input.game];if(!preset)throw Error('Escolha uma modalidade disponível.');
+  if(!state.entries.some(row=>row.category==='game'&&row.name===input.game&&row.revealed))throw Error('Esta modalidade está desativada.');
   const eligible=state.teams.filter(t=>t.members.filter(m=>m.actorId&&actors.some(a=>a.id===m.actorId&&!a.hasPlayerOwner)).length>=preset.size);
   if(eligible.length<2)throw Error('Sincronize o elenco: são necessárias duas equipes com fichas de NPC vinculadas.');
   const a=input.teamA?eligible.find(t=>t.id===input.teamA):eligible[Math.floor(random()*eligible.length)];

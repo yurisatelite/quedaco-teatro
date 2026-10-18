@@ -24,13 +24,17 @@ test('projeção pública usa campos explícitos e remove notas, contas e segred
   assert.equal(p.teams.length,1);
   assert.doesNotMatch(renderView({state:p}),/data-qt-action="publish"|data-qt-form|Segredos e condução|Livro de apostas/);
 });
-test('modo enxuto publica só os quatro jogos ativos e permite ao mestre ocultar cada um',()=>{
+test('foco no Anel ativa só o duelo e migra mundos existentes uma única vez',()=>{
   const s=initialState(CATALOG),games=s.entries.filter(row=>row.category==='game');
   assert.deepEqual(games.filter(row=>row.revealed).map(row=>row.id).sort(),Array.from(ACTIVE_GAME_IDS).sort());
   games.find(row=>row.id==='corrida').revealed=false;
   assert.equal(publicState(s).entries.some(row=>row.id==='corrida'),false);
   const legacy={entries:structuredClone(CATALOG)};normalizeState(legacy);
   assert.deepEqual(legacy.entries.filter(row=>row.category==='game'&&row.revealed).map(row=>row.id).sort(),Array.from(ACTIVE_GAME_IDS).sort());
+  const existing={entries:structuredClone(CATALOG),gameVisibilityInitialized:true};normalizeState(existing);
+  assert.deepEqual(existing.entries.filter(r=>r.category==='game'&&r.revealed).map(r=>r.id),['duelo']);
+  existing.entries.find(r=>r.id==='duelo').revealed=false;normalizeState(existing);
+  assert.equal(existing.entries.find(r=>r.id==='duelo').revealed,false);
 });
 test('apostas fixam cotação, pagam uma vez e preservam caixa',()=>{
   const s=initialState(CATALOG);event(s);

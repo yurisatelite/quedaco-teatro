@@ -20,7 +20,7 @@ try{
   await page.goto(`http://127.0.0.1:${server.address().port}`);
   await page.waitForSelector('[data-qt-action="publish"]');
   await page.click('[data-qt-action="tab"][data-id="games"]');
-  assert.equal(await page.locator('.qt-game-grid').first().locator('.qt-game-tile').count(),4);
+  assert.equal(await page.locator('.qt-game-grid').first().locator('.qt-game-tile').count(),1);
   assert.equal(await page.locator('.qt-drawer:not([open])').count(),1);
   assert.equal(await page.locator('nav button').last().innerText(),'Dossiê');
   const tab=id=>page.click(`[data-qt-action="tab"][data-id="${id}"]`);
