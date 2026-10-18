@@ -111,7 +111,7 @@ const COMPETITOR_PROPS={
 function template({key,name,job,appearance,clothes,behavior,voice,routine,desire,fear,secret,hook,tactics,possessions,cash,relations=[]}){
   // Anuro/Bufonin, Combatente e Militar são entradas verificadas pelo Criador.
   // A preparação ainda consulta os compêndios instalados antes de gravar a ficha.
-  return {id:`teatro:${key}`,name,level:1,cash,legacy:'Anuro',heritage:'Bufonin',characterClass:'Combatente',background:'Militar',attributes:{str:1,dex:1,con:1,int:0,wis:1,cha:0},inventory:[],possessions,skillPriority:['athletics','perception'],languagePriority:[],featPriority:[],relations,job,appearance,clothes,behavior,voice,routine,desire,fear,secret,hook,tactics};
+  return {id:`teatro:${key}`,name,level:1,cash,legacy:'Anuro',heritage:'Bufonin',characterClass:'Combatente',background:'Militar',attributes:{str:1,dex:1,con:1,int:0,wis:1,cha:0},inventory:[],possessions,skillPriority:['athletics','perception'],languagePriority:[],featPriority:['Combate com uma arma','Façanha com uma arma','Ataque Poderoso'],relations,job,appearance,clothes,behavior,voice,routine,desire,fear,secret,hook,tactics};
 }
 
 /** Modelos detalhados, idempotentes e prontos para a API do Criador. */

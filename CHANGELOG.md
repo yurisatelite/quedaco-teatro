@@ -1,3 +1,7 @@
+# 0.8.1
+
+- Corrige a criação dos NPCs Combatentes: o modelo agora prioriza o par compatível Combate com uma arma / Façanha com uma arma.
+
 # 0.8.0
 
 - Cria modo enxuto: só Duelo do Anel, Batalha de Equipes, Corrida dos Escorpiões e Jogo do Silêncio são publicados inicialmente; cada jogo pode ser ocultado ou liberado individualmente.

@@ -1,6 +1,6 @@
 # QUEDAÇO - O Teatro dos Condenados
 
-Versão 0.8.0 para Foundry VTT 13, baseada na instalação local 13.351. Conteúdo autoral de campanha situado em Kravokia e no Deserto de Mirmir, para uso com Skyfall RPG. Personagens, instituições, provas e mistérios são propostas da campanha, não afirmações de cânone. Não inclui texto de livros ou fichas oficiais.
+Versão 0.8.1 para Foundry VTT 13, baseada na instalação local 13.351. Conteúdo autoral de campanha situado em Kravokia e no Deserto de Mirmir, para uso com Skyfall RPG. Personagens, instituições, provas e mistérios são propostas da campanha, não afirmações de cânone. Não inclui texto de livros ou fichas oficiais.
 
 ## Instalação e abertura
 
