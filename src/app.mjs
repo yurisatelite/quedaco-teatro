@@ -1,15 +1,17 @@
 import {ID, TITLE, publicState, addEvent, addBettor, placeBet, recordBattle, recordDuel, settleEvent, startBattle, startDuel, required, amount, uid, escape as e} from './model.mjs';
 import {renderView} from './view.mjs';
 import {characterSummary,ownedCharacter,eligibleNpc} from './membership.mjs';
-import {createCircuitEvent,finishSimulation} from './circuit.mjs';
+import {createCircuitEvent,finishSimulation,editEventParticipants} from './circuit.mjs';
 import {restoreCircuitLinks} from './roster.mjs';
+import {addTeam,addTeamMember,removeTeam,removeTeamMember,removePerson,removeBettor,syncParticipants,actorClass} from './participation.mjs';
+import {installVendors} from './vendors.mjs';
 export function createTheatreApp(store) {
   return class TheatreApp extends foundry.applications.api.ApplicationV2 {
     static DEFAULT_OPTIONS = {id:ID,classes:['quedaco-teatro'],window:{title:'QT.Title',icon:'fa-solid fa-masks-theater',resizable:true},position:{width:1120,height:790}};
     tab='overview'; category='place'; query=''; preview=false; notice=''; busy=false; dirty=false; revision=0;
     async _renderHTML() {
       const gm=game.user.isGM, published=store.published();
-      const source=gm?restoreCircuitLinks(store.read(),game.actors):null;
+      const source=gm?syncParticipants(restoreCircuitLinks(store.read(),game.actors),game.actors):null;
       this.revision=source?.revision;
       const actors=!this.preview?Array.from(game.actors ?? []).filter(actor=>gm||ownedCharacter(actor,game.user)).map(actor=>({...characterSummary(actor),npc:eligibleNpc(actor)})).sort((a,b)=>a.name.localeCompare(b.name,'pt-BR')):[];
       return renderView({state:gm?(this.preview?publicState(source):source):published,gm,preview:this.preview,tab:this.tab,category:this.category,query:this.query,notice:this.notice,published,actors});
@@ -17,9 +19,6 @@ export function createTheatreApp(store) {
     _replaceHTML(result,content) {content.innerHTML=result;}
     _onRender(context,options) {
       super._onRender(context,options);
-      for(const input of this.element.querySelectorAll('input[name="role"]:not([type="hidden"])')){
-        const select=document.createElement('select');select.name='role';for(const role of ['Combatente','Especialista','Ocultista']){const option=document.createElement('option');option.value=role;option.textContent=role;select.append(option);}input.replaceWith(select);
-      }
       const sponsorInput=this.element.querySelector('input[name="sponsor"]');
       if(sponsorInput){const select=document.createElement('select');select.name='sponsorActorId';const empty=document.createElement('option');empty.value='';empty.textContent='Sem patrocinador';select.append(empty);for(const actor of Array.from(game.actors??[]).filter(eligibleNpc)){const option=document.createElement('option');option.value=actor.id;option.textContent=actor.name;select.append(option);}sponsorInput.replaceWith(select);}
       this.listeners?.abort();this.listeners=new AbortController();const {signal}=this.listeners;
@@ -35,13 +34,14 @@ export function createTheatreApp(store) {
         void report(()=>this.submit(form));
       },{signal});
       this.element.addEventListener('input',event=>{
+        this.updateBetReturn(event.target.closest('[data-qt-bet]'));
         if(event.target.matches('[data-qt-search]')) {
           this.query=event.target.value;
           // Search locally to preserve focus and avoid a render on every keystroke.
           for(const card of this.element.querySelectorAll('.qt-cards .qt-card'))card.hidden=!card.textContent.toLocaleLowerCase('pt-BR').includes(this.query.toLocaleLowerCase('pt-BR'));
         }else if(event.target.closest('form'))this.dirty=true;
       },{signal});
-      this.element.addEventListener('change',event=>{if(event.target.closest('form'))this.dirty=true;},{signal});
+      this.element.addEventListener('change',event=>{if(event.target.closest('form'))this.dirty=true;this.updateBetReturn(event.target.closest('[data-qt-bet]'));},{signal});
       this.element.addEventListener('dragstart',event=>{
         const actorId=event.target.closest('[data-qt-actor-id]')?.dataset.qtActorId;if(!actorId)return;
         const actor=game.actors?.get(actorId);if(!actor)return;
@@ -51,6 +51,7 @@ export function createTheatreApp(store) {
       this.dirty=false;
     }
     requireGM() {if(!game.user.isGM||this.preview)throw Error('Somente o mestre pode alterar o Teatro.');}
+    updateBetReturn(form){if(!form)return;const stake=Number(form.querySelector('[name="stake"]').value),odds=Number(form.querySelector('[name="side"]').selectedOptions[0]?.dataset.odds??0);form.querySelector('[data-qt-return]').textContent=`Retorno na vitória: ${(stake*odds).toLocaleString('pt-BR')} pilas (inclui a aposta)`;}
     async discard() {
       return !this.dirty||await foundry.applications.api.DialogV2.confirm({window:{title:'Alterações não salvas'},content:'<p>Descartar os campos ainda não salvos?</p>'});
     }
@@ -65,6 +66,7 @@ export function createTheatreApp(store) {
       this.busy=true;
       try {
         const {qtAction:action,id}=target.dataset;
+        if(action==='bet-amount'){const form=target.closest('[data-qt-bet]');form.querySelector('[name="stake"]').value=target.dataset.amount;this.updateBetReturn(form);this.dirty=true;return;}
         if(['tab','category','preview'].includes(action)) {
           if(!await this.discard())return;
           if(action==='tab')this.tab=id;
@@ -74,7 +76,16 @@ export function createTheatreApp(store) {
         }else{
           this.requireGM();
           if(this.dirty)throw Error('Salve os campos do formulário antes de usar esta ação.');
-          if(action==='publish') {await store.mutate(s=>restoreCircuitLinks(s,game.actors),this.revision);await store.publish();this.notice='Cartaz publicado. A apresentação foi aberta para os jogadores conectados.';}
+          if(action==='publish') {await store.mutate(s=>syncParticipants(restoreCircuitLinks(s,game.actors),game.actors),this.revision);await store.publish();this.notice='Cartaz publicado. A apresentação foi aberta para os jogadores conectados.';}
+          else if(['remove-team','remove-member','remove-person','remove-bettor'].includes(action)){
+            const yes=await foundry.applications.api.DialogV2.confirm({window:{title:'Remover do Coliseu'},content:'<p>Confirmar a remoção deste cadastro? A ficha do Foundry e os bilhetes de apostas serão preservados.</p>'});if(!yes)return;
+            await store.mutate(s=>{if(action==='remove-team')removeTeam(s,id);if(action==='remove-member')removeTeamMember(s,id,target.dataset.memberKey);if(action==='remove-person')removePerson(s,id);if(action==='remove-bettor')removeBettor(s,id);},this.revision);
+            this.notice='Cadastro removido. A ficha e o histórico foram preservados.';
+          }
+          else if(action==='refresh-npc-images'){
+            const {repairCircuitImages}=await import('./roster.mjs');const count=await repairCircuitImages({game});
+            await store.mutate(s=>syncParticipants(restoreCircuitLinks(s,game.actors),game.actors),this.revision);this.notice=`Imagens conferidas em ${count} fichas. Imagens personalizadas foram preservadas.`;
+          }
           else if(action==='withdraw') {await store.withdraw();this.notice='Apresentação fechada. Informações já vistas não podem ser desfeitas.';}
           else if(action==='simulate-event') {await store.mutate(s=>finishSimulation(s,id),this.revision);if(store.published())await store.publish();this.notice='Resultado publicado e apostas liquidadas. Os jogadores já podem resgatar.';}
           else if(action==='open-actor') {const actor=game.actors?.get(target.dataset.actorId);if(!actor)throw Error('Actor indisponível.');actor.sheet?.render(true);return;}
@@ -132,18 +143,18 @@ export function createTheatreApp(store) {
           }else if(action==='install-roster') {
             const {installCircuit}=await import('./roster.mjs');
             await store.mutate(s=>installCircuit(s),this.revision);
-            this.notice='Circuito inicial instalado: 4 equipes, 16 apostadores e 8 pessoas de bastidor.';
+            this.notice='Circuito inicial instalado: 4 equipes, 16 apostadores, 8 pessoas de bastidor e 4 vendedores.';
           }else if(action==='create-roster-actors') {
-            const {CREATOR_ID,createCircuitActors,applyCircuitActorLinks,organizeCircuitActors,synchronizeCircuitCompetitorTags}=await import('./roster.mjs');
+            const {CREATOR_ID,CIRCUIT_NPCS,createCircuitActors,applyCircuitActorLinks,organizeCircuitActors,synchronizeCircuitCompetitorTags}=await import('./roster.mjs');
             const creator=game.modules?.get(CREATOR_ID)?.api;
-            const total=store.read().teams.reduce((count,team)=>count+team.members.length,0)+(store.read().bettors?.length??0)+(store.read().personnel?.length??0);
+            const total=CIRCUIT_NPCS.length;
             const yes=await foundry.applications.api.DialogV2.confirm({window:{title:'Criar fichas do elenco'},content:`<p>O Criador de Personagens vai pré-validar e criar ${total} Actors nativos de Skyfall.</p><p>Fichas já vinculadas pelo mesmo modelo não serão duplicadas. Cada ficha receberá a tag <code>quedaco-teatro.npc</code>.</p>`});
             if(!yes)return;
             this.notice='Criando fichas pelo Criador de Personagens; isto pode levar alguns instantes.';
             await this.render({force:true});
             const result=await createCircuitActors(creator,{game});
             const current=store.read();
-            await store.mutate(s=>applyCircuitActorLinks(s,result.linked),current.revision);
+            await store.mutate(s=>{installVendors(s);applyCircuitActorLinks(s,result.linked);syncParticipants(s,game.actors);},current.revision);
             await synchronizeCircuitCompetitorTags(store.read(),{game});
             await organizeCircuitActors(store.read(),{game});
             this.notice=`Elenco sincronizado: ${result.created} ficha(s) criada(s), ${result.existing} já existente(s). Organizado no diretório Actors › Teatro dos Condenados.${result.warnings?.length?` ${result.warnings.length} relação(ões) aguardam revisão.`:''}`;
@@ -154,12 +165,11 @@ export function createTheatreApp(store) {
               if(action==='event-visible'){const row=s.events.find(r=>r.id===id);if(row)row.visible=!row.visible;}
               if(action==='lock'){const row=s.events.find(r=>r.id===id);if(row?.status==='open')row.status='closed';}
               if(action==='team-visible'){const row=s.teams.find(r=>r.id===id);if(row)row.visible=!row.visible;}
-              if(action==='fame'){const row=s.teams.find(r=>r.id===id);if(row)row.fame=Math.max(0,Math.min(100,row.fame+Number(target.dataset.delta)));}
               if(action==='contract-close'){const row=s.contracts.find(r=>r.id===id);if(row)row.closed=true;}
             },this.revision);
           }
         }
-        if(target.dataset.qtAction==='lock'&&store.published())await store.publish();
+        if(['lock','settle','start-duel','start-battle'].includes(target.dataset.qtAction)&&store.published())await store.publish();
         this.dirty=false;await this.render({force:true});
       }finally{this.busy=false;}
     }
@@ -173,6 +183,8 @@ export function createTheatreApp(store) {
         const data=new FormData(form),values=Object.fromEntries(data), action=form.dataset.qtForm;
         values.side0ActorIds=data.getAll('side0ActorIds');values.side1ActorIds=data.getAll('side1ActorIds');
         await store.mutate(async s=>{
+          syncParticipants(s,game.actors);
+          if(action==='event-participants')editEventParticipants(s,values.eventId,values,{actors:Array.from(game.actors??[])});
           if(action==='circuit-events'){
             restoreCircuitLinks(s,game.actors);
             const count=Number(values.count);if(!Number.isInteger(count)||count<1||count>4)throw Error('Escolha de uma a quatro provas.');
@@ -186,15 +198,21 @@ export function createTheatreApp(store) {
             if(values.teamA&&values.teamA===values.teamB)throw Error('Uma equipe não pode enfrentar a si mesma.');
             addEvent(s,values);
           }
-          if(action==='bet')placeBet(s,values);
-          if(action==='bettor')addBettor(s,values);
-          if(action==='team'){const sponsor=values.sponsorActorId?game.actors.get(values.sponsorActorId):null;if(sponsor&&!eligibleNpc(sponsor))throw Error('Patrocinadores devem ser NPCs; ameaças não são permitidas.');s.teams.push({id:uid(),name:required(values.name),sponsor:sponsor?.name??'',sponsorActorId:sponsor?.id??'',fame:0,visible:false,members:[]});}
+          if(action==='bet'){const stake=Number(values.stake);if(!Number.isSafeInteger(stake)||stake<1||stake>100)throw Error('Aposte de 1 a 100 pilas inteiras.');placeBet(s,values);}
+          if(action==='bettor'){const actor=values.actorId?game.actors.get(values.actorId):null;if(actor&&!eligibleNpc(actor))throw Error('Selecione uma ficha de NPC social, sem dono jogador.');addBettor(s,values);}
+          if(action==='team'||action==='team-edit'){
+            const sponsor=values.sponsorActorId&&values.sponsorActorId!=='keep'?game.actors.get(values.sponsorActorId):null;if(sponsor&&!eligibleNpc(sponsor))throw Error('Patrocinadores devem ser NPCs; ameaças não são permitidas.');
+            if(action==='team')addTeam(s,{...values,sponsor:sponsor?.name??'',sponsorActorId:sponsor?.id??''});
+            else {const team=s.teams.find(t=>t.id===values.teamId);if(!team)throw Error('Equipe indisponível.');const name=required(values.name);if(s.teams.some(t=>t.id!==team.id&&t.name.toLocaleLowerCase()===name.toLocaleLowerCase()))throw Error('Nome de equipe já utilizado.');Object.assign(team,{name,allowPlayers:values.allowPlayers==='on'});if(values.sponsorActorId!=='keep')Object.assign(team,{sponsor:sponsor?.name??'',sponsorActorId:sponsor?.id??''});}
+          }
           if(action==='team-member') {
-            const team=s.teams.find(t=>t.id===values.teamId),actor=game.actors?.get(values.actorId);
-            if(!team||!actor)throw Error('Equipe ou Actor indisponível.');
-            if(s.teams.some(t=>t.members.some(m=>m.actorId===actor.id)))throw Error(`${actor.name} já está inscrito em uma equipe.`);
-            team.members.push({actorId:actor.id,name:actor.name,role:required(values.role)});
-            await actor.setFlag?.(ID,'competitor',{teamId:team.id,teamName:team.name,role:values.role,registeredAt:Date.now()});
+            addTeamMember(s,values.teamId,game.actors?.get(values.actorId));
+          }
+          if(action==='link-member'){
+            const team=s.teams.find(t=>t.id===values.teamId),member=team?.members.find(m=>(m.actorId||m.npcKey||m.name)===values.memberKey),actor=game.actors.get(values.actorId);
+            if(!member||member.actorId||actor?.type!=='character')throw Error('Escolha uma ficha de personagem para um participante pendente.');
+            if(s.teams.some(t=>t.members.some(m=>m.actorId===actor.id)))throw Error('A ficha já está em outra posição de equipe.');
+            Object.assign(member,{actorId:actor.id,name:actor.name,img:actor.img,role:actorClass(actor)||'Classe não definida'});
           }
           if(action==='contract')s.contracts.push({id:uid(),name:required(values.name),party:required(values.party),debt:amount(values.debt),terms:values.terms,closed:false});
           if(action==='direction') {

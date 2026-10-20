@@ -1,4 +1,5 @@
 import {clone, uid} from './model.mjs';
+import {VENDORS,installVendors} from './vendors.mjs';
 
 export const CREATOR_ID='quedaco-personagens-skyfall-rpg';
 const slug=value=>String(value).normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/(^-|-$)/g,'');
@@ -131,8 +132,9 @@ export const CIRCUIT_NPCS=Object.freeze([
   ...CIRCUIT_PERSONNEL.map(([name,role,publicText,secret])=>{
     const [possessions,routine]=PERSONNEL_PROPS[name];const key=npcKey(name);
     return {key,kind:'personnel',role,model:template({key,name,job:`Bastidores do Teatro · ${role}`,appearance:`Profissional do Coliseu que carrega o cansaço de muitos espetáculos. ${publicText}`,clothes:'Uniforme funcional do Teatro, remendado nos pontos de maior uso e sem insígnia que revele lealdade demais.',behavior:'Faz o trabalho com precisão; trata a crueldade da arena como problema logístico até que alguém cruza um limite.',voice:'Controlada e econômica, capaz de ficar gentil ou fria conforme o público exige.',routine,desire:'Manter sua posição no Teatro sem abandonar a própria linha moral.',fear:'Que um erro de bastidor vire uma morte que poderia ter sido evitada.',secret,hook:`Os personagens podem precisar de ${name} para atravessar uma porta, descobrir uma irregularidade ou proteger alguém do sistema do Coliseu.`,tactics:'Evita confronto aberto. Conhece passagens, horários e procedimentos do Coliseu; chama ajuda e protege civis antes de lutar.',possessions,cash:55})};
-  })
-].map(row=>({...row,model:{...row.model,
+  }),
+  ...VENDORS.map(v=>({key:v.key,kind:'vendor',role:v.job,model:template({...v,relations:[]})}))
+].map(row=>({...row,model:{...row.model,portrait:`modules/quedaco-teatro/assets/npc/${row.key}.png`,token:`modules/quedaco-teatro/assets/npc/${row.key}.png`,
   sourceModule:'quedaco-teatro',
   context:'Circuito Inicial do Teatro dos Condenados, Coliseu de Kravokia no Deserto de Mirmir.',
   teamId:row.teamName?`teatro-team:${npcKey(row.teamName)}`:'',
@@ -142,19 +144,23 @@ export const CIRCUIT_NPCS=Object.freeze([
 
 export function circuitNpc(key){return CIRCUIT_NPCS.find(row=>row.key===key)??null;}
 export function restoreCircuitLinks(state,actors){
+  const records=[...state.teams.flatMap(t=>t.members),...state.bettors,...(state.personnel??[])];
+  const actorIds=new Set(Array.from(actors??[]).map(a=>a.id));
+  for(const record of records)if(record.actorId&&!actorIds.has(record.actorId))record.actorId='';
   const rows=Array.from(actors??[]),links=CIRCUIT_NPCS.flatMap(row=>{
     const matches=rows.filter(actor=>actor.flags?.['quedaco-teatro']?.npc?.key===row.key||actor.flags?.[CREATOR_ID]?.npcModel?.id===row.model.id);
     return matches.length===1?[{key:row.key,actorId:matches[0].id}]:[];
   });
   applyCircuitActorLinks(state,links);
-  for(const record of [...state.teams.flatMap(t=>t.members),...state.bettors,...(state.personnel??[])]){const actor=rows.find(a=>a.id===record.actorId);if(actor)record.img=actor.img;}
+  for(const record of [...state.teams.flatMap(t=>t.members),...state.bettors,...(state.personnel??[])]){const actor=rows.find(a=>a.id===record.actorId);if(actor)record.img=actor.img;else {const template=circuitNpc(record.npcKey??npcKey(record.name));if(template)record.img=template.model.portrait;}}
   return state;
 }
 
-async function repairActorVisual(actor){
+async function repairActorVisual(actor,row){
   if(!actor?.update)return;
-  const portrait=actor.img&& !String(actor.img).includes('mystery-man') ? actor.img : NPC_PORTRAIT;
-  const token=actor.prototypeToken?.texture?.src && !String(actor.prototypeToken.texture.src).includes('mystery-man') ? actor.prototypeToken.texture.src : NPC_TOKEN;
+  const defaultArt=path=>!path||String(path).includes('mystery-man')||path===NPC_PORTRAIT;
+  const portrait=defaultArt(actor.img)?row.model.portrait:actor.img;
+  const token=defaultArt(actor.prototypeToken?.texture?.src)?row.model.token:actor.prototypeToken.texture.src;
   await actor.update({img:portrait,'prototypeToken.texture.src':token,'prototypeToken.name':actor.name});
 }
 
@@ -175,7 +181,7 @@ export async function createCircuitActors(creator,{game=globalThis.game,onProgre
       const row=CIRCUIT_NPCS.find(candidate=>candidate.model.id===item.id);if(!row)continue;
       const actor=await globalThis.fromUuid?.(item.actorUuid)??Array.from(game.actors??[]).find(candidate=>candidate.uuid===item.actorUuid);
       if(!actor)throw Error(`${item.name}: a ficha foi criada, mas não pôde ser vinculada ao Teatro.`);
-      await repairActorVisual(actor);
+      await repairActorVisual(actor,row);
       const tag={key:row.key,kind:row.kind,teamName:row.teamName??'',role:row.role??'',registeredAt:Date.now()};
       await actor.setFlag?.('quedaco-teatro','npc',tag);
       if(row.kind==='competitor')await actor.setFlag?.('quedaco-teatro','competitor',{teamName:row.teamName,role:row.role,registeredAt:tag.registeredAt});
@@ -193,7 +199,7 @@ export async function createCircuitActors(creator,{game=globalThis.game,onProgre
     const result=await creator.createNpcFromTemplate(row.model,{expectedSignature:preview.signature});
     const actor=await globalThis.fromUuid?.(result.actorUuid)??Array.from(game.actors??[]).find(candidate=>candidate.uuid===result.actorUuid);
     if(!actor)throw Error(`${row.model.name}: a ficha foi criada, mas não pôde ser vinculada ao Teatro.`);
-    await repairActorVisual(actor);
+    await repairActorVisual(actor,row);
     const tag={key:row.key,kind:row.kind,teamName:row.teamName??'',role:row.role??'',registeredAt:Date.now()};
     await actor.setFlag?.('quedaco-teatro','npc',tag);
     if(row.kind==='competitor')await actor.setFlag?.('quedaco-teatro','competitor',{teamName:row.teamName,role:row.role,registeredAt:tag.registeredAt});
@@ -205,9 +211,11 @@ export async function createCircuitActors(creator,{game=globalThis.game,onProgre
 
 export function applyCircuitActorLinks(state,links){
   const byKey=new Map(links.map(link=>[link.key,link]));
-  for(const team of state.teams)for(const member of team.members){const linked=byKey.get(npcKey(member.name));if(linked)member.actorId=linked.actorId;}
-  for(const bettor of state.bettors){const linked=byKey.get(npcKey(bettor.name));if(linked)bettor.actorId=linked.actorId;}
-  for(const person of state.personnel??[]){const linked=byKey.get(npcKey(person.name));if(linked)person.actorId=linked.actorId;}
+  for(const record of [...state.teams.flatMap(t=>t.members),...state.bettors,...(state.personnel??[])]){
+    const key=record.npcKey??npcKey(record.name),linked=byKey.get(key);
+    if(circuitNpc(key))record.npcKey=key;
+    if(linked&&!record.actorId)record.actorId=linked.actorId;
+  }
   return clone(state);
 }
 
@@ -251,5 +259,19 @@ export function installCircuit(state) {
   state.personnel ??=[];
   for(const [name,role,publicText,secret] of CIRCUIT_PERSONNEL)state.personnel.push({id:uid(),name,role,publicText,secret,actorId:''});
   state.rosterInstalled=true;
+  installVendors(state);
   return clone(state);
+}
+
+export async function repairCircuitImages({game=globalThis.game}={}){
+  let changed=0;
+  for(const row of CIRCUIT_NPCS){
+    const matches=Array.from(game.actors??[]).filter(a=>a.flags?.['quedaco-teatro']?.npc?.key===row.key||a.flags?.[CREATOR_ID]?.npcModel?.id===row.model.id);if(matches.length!==1)continue;
+    const actor=matches[0];await repairActorVisual(actor,row);changed++;
+    for(const scene of Array.from(game.scenes??[])){
+      const updates=Array.from(scene.tokens??[]).filter(t=>t.actorId===actor.id&&(!t.texture?.src||t.texture.src===NPC_PORTRAIT||t.texture.src.includes('mystery-man'))).map(t=>({_id:t.id,'texture.src':row.model.token}));
+      if(updates.length)await scene.updateEmbeddedDocuments('Token',updates);
+    }
+  }
+  return changed;
 }

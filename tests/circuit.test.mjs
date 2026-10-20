@@ -6,7 +6,7 @@ import {installCircuit,CIRCUIT_NPCS,restoreCircuitLinks} from '../src/roster.mjs
 import {PRESETS,createCircuitEvent,finishSimulation} from '../src/circuit.mjs';
 test('rodadas usam fichas de NPC, geram apostas solventes e finalizam uma única vez',()=>{
  const s=normalizeState(initialState(CATALOG));installCircuit(s);
- const actors=CIRCUIT_NPCS.map((row,i)=>({id:`a${i}`,name:row.model.name,img:row.model.portrait,flags:{'quedaco-personagens-skyfall-rpg':{npcModel:{id:row.model.id}}}}));restoreCircuitLinks(s,actors);
+ const actors=CIRCUIT_NPCS.map((row,i)=>({id:`a${i}`,type:'character',name:row.model.name,img:row.model.portrait,flags:{'quedaco-personagens-skyfall-rpg':{npcModel:{id:row.model.id}}}}));restoreCircuitLinks(s,actors);
  for(const game of Object.keys(PRESETS)){
   s.entries.find(row=>row.name===game&&row.category==='game').revealed=true;
   const ev=createCircuitEvent(s,{game},{actors,random:()=>.2});assert.equal(ev.lineup[0].length,PRESETS[game].size);assert.ok(s.bets.some(b=>b.eventId===ev.id));

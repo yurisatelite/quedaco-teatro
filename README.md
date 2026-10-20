@@ -1,85 +1,74 @@
-# QUEDAÇO - O Teatro dos Condenados
+# QUEDAÇO — Teatro dos Condenados
 
-## Rodadas de NPCs (0.11.0)
+Módulo de campanha para Foundry VTT 13 e Skyfall RPG. O Coliseu de Kravokia é uma dimensão de bolso: áreas de convivência conectam portais para as arenas. Conteúdo autoral, não uma declaração de cânone do cenário.
 
-Em **Equipes e elenco**, abra a gaveta de elenco para resolver fichas pendentes. A geração de rodadas exige duas equipes com Actors de NPC vinculados; ela não cria fichas fictícias. Os apostadores ficam na gaveta de **Apostas**. Cada um usa seu caixa do livro do Coliseu, separado da bolsa do Actor.
+**Versão 0.12.0.** Manifesto para instalar ou atualizar pelo Foundry Server: https://github.com/yurisatelite/quedaco-teatro/releases/latest/download/module.json. Publicar a versão não instala a atualização automaticamente no servidor.
 
-Em **Provas**, escolha modalidade, quantidade (1–4) e condução. A escalação e os bilhetes dos apostadores são gerados automaticamente. Use **Mostrar para os jogadores**, deixe os jogadores apostarem pilas em **Minhas apostas**, encerre as apostas e clique **Sortear e finalizar**. Encerramento e resultado atualizam o cartaz publicado. Cada jogador consulta os bilhetes e resgata na própria ficha, com um mestre conectado.
+## Fluxo enxuto
 
-Simulações usam uma regra autoral: peso de cada equipe = 10 + fama (mínimo 1); um sorteio escolhe o vencedor, com placar e motivo narrativo. Não executam regras de combate Skyfall nem consomem recursos das fichas. O modo **Na mesa** prepara Cena e iniciativa para Duelo/Batalha; Corrida e Silêncio possuem simulação e mapas de referência.
+Somente **Duelo do Anel** começa disponível. As outras modalidades permanecem na gaveta de jogos desativados; registros e mapas antigos são preservados. O Dossiê é a última opção e fica reservado ao mestre. Praça das Caravanas, mercado e guichês são referências narrativas do espaço central, não mapas exploráveis prontos.
 
-O Dossiê é um caderno privado do mestre. Praça, mercado e guichês descrevem o espaço central da dimensão de bolso e ainda não têm mapas próprios. Cada portal conduz à dimensão de uma modalidade. Os retratos atuais do circuito compartilham arte provisória; retratos individuais ainda precisam ser produzidos ou atribuídos nas fichas.
+Abra pelo botão do Teatro no diretório de diários, pela ferramenta de máscaras ou pela macro `game.modules.get('quedaco-teatro').api.openTheatre()`.
 
-Versão 0.9.0 para Foundry VTT 13. Conteúdo autoral de campanha situado em Kravokia e no Deserto de Mirmir, para uso com Skyfall RPG. Personagens, instituições, provas e mistérios são propostas da campanha, não afirmações de cânone. Não inclui texto de livros ou fichas oficiais.
+1. Prepare as fichas e imagens, se necessário, no Dossiê.
+2. Em **Equipes**, abra um card para editar integrantes. O card verde cria uma equipe nova.
+3. Em **Provas**, escolha os duelistas diretamente ou use equipes com NPCs vinculados. É possível gerar de uma a quatro provas de NPCs.
+4. Publique com **Mostrar para os jogadores**. Jogadores inscritos podem apostar em **Minhas apostas**.
+5. Encerre apostas e conduza a prova na mesa ou use **Sortear e finalizar** nas simulações.
+6. A prova encerrada sai da programação ativa e fica em **Provas finalizadas**. Os jogadores consultam e resgatam seus bilhetes.
 
-## Inscrição dos jogadores
+## Equipes e inscrições
 
-Depois de o mestre publicar o Teatro, cada jogador abre **Inscrição e equipes**, escolhe uma ficha própria e paga **10 pilas uma única vez por personagem**. O saldo usado é `system.currency.p`; trocados e kurmacs não são convertidos automaticamente. Um mestre precisa estar conectado. O módulo confere a propriedade da ficha e processa solicitações por um único mestre ativo.
+Cards verticais recolhíveis mostram escudo, membros, patrocínio, vitórias e derrotas. Cada equipe aceita até cinco pessoas. Equipes antigas que já excedam esse limite não perdem membros automaticamente; o mestre deve ajustar a composição antes de adicionar alguém. As equipes de NPCs recebem uma campanha inicial fictícia de vitórias e derrotas, gerada uma vez; novas equipes começam em zero. Fama fica guardada nos dados, mas oculta e sem controles.
 
-Inscritos podem criar equipes, convidar outros inscritos sem equipe, aceitar ou recusar convites, solicitar vagas nas provas abertas e apostar. Retrato, inventário e pilas vêm da ficha. As classes disponíveis são Combatente, Especialista e Ocultista. A escolha no cadastro não modifica a classe mecânica do personagem. O mestre distribui as vagas solicitadas entre os lados da prova antes de montar a arena.
+A classe é lida do Item de classe da ficha Skyfall, inclusive para inscrições antigas. Não há mais um papel independente no Coliseu. Se não houver classe, ajuste a ficha. Ameaças não aparecem como candidatos. Jogadores podem formar equipes entre si; equipes de NPCs só aceitam jogadores quando o mestre habilita a opção.
 
-**Apostas em pilas** debitam a ficha e usam a cotação do bilhete. Após o resultado, use **Resgatar prêmios disponíveis**. **Apostas de itens** usam o preço da ficha em pilas e retiram a quantidade apostada de circulação. Vitória devolve o item e paga o lucro em pilas; anulação devolve o item; derrota entrega o item à Casa. Itens devem estar desequipados e desvinculados; pertences narrativos sem valor não são aceitos. Não apague o item de quantidade zero enquanto houver aposta pendente. Prêmios fracionários precisam de conversão pelo mestre.
+O mestre pode remover um integrante, excluir uma equipe ou remover a inscrição de uma pessoa. Isso **não apaga Actors nem bilhetes**. Participantes/equipes de provas abertas precisam ter essas provas finalizadas ou anuladas primeiro. Remover apenas um membro da equipe mantém sua inscrição no Coliseu.
 
-Patrocinadores usam fichas de personagem sem proprietário jogador. No Skyfall, o tipo interno `npc` corresponde a **Ameaça** e é excluído dessa seleção. Ameaças continuam disponíveis ao mestre na escalação das provas.
+A inscrição cobra 10 pilas do campo `system.currency.p`, com mestre conectado e validação de propriedade. A marca de pagamento permanece no Actor: nesta versão ainda é uma taxa única por personagem, não uma cobrança por visita. Fechar a janela não cancela a inscrição. Trocados e kurmacs não são convertidos automaticamente.
 
-## Instalação e abertura
+## Apostas
 
-No Foundry, acesse Add-on Modules → Install Module e cole este Manifest URL: https://github.com/yurisatelite/quedaco-teatro/releases/latest/download/module.json
+Novas apostas são somente em dinheiro: valores inteiros de **1 a 100 pilas**, limitados também ao saldo real. Há atalhos de 10, 20, 50 e 100, e o retorno exibido inclui a entrada: apostar 10 a 2× retorna 20 se vencer. A cotação fica fixada no bilhete. Bilhetes antigos de itens continuam resgatáveis, mas novas apostas de itens estão desativadas.
 
-Extraia `dist/quedaco-teatro.zip` em `Data/modules/quedaco-teatro/`, com `module.json` diretamente nessa pasta. Reinicie o Foundry e ative o módulo no mundo. Abra pelo botão Teatro dos Condenados no diretório de diários, pela ferramenta de máscaras na barra de tokens ou em Configurações → Configurações do módulo. Macro opcional: `game.modules.get('quedaco-teatro').api.openTheatre()`.
+Ao aderir às apostas, o jogador é informado de que seu saldo ficará visível aos demais jogadores. O caixa, as dívidas, a origem e os segredos dos apostadores NPCs são privados do mestre. Seus caixas são narrativos, separados do dinheiro dos Actors, e recebem reposição quando necessário para continuar participando.
 
-## Preparar e apresentar
-
-O mestre recebe um painel com visão geral, dossiê, espetáculos, apostas, equipes, contratos e direção. A primeira abertura cria um JournalEntry privado que guarda a campanha. O dossiê inclui 10 lugares, 8 NPCs, 12 jogos, 6 facções, 6 aventuras e 5 orientações. Notas e textos do dossiê podem ser editados.
-
-Escolha quais registros incluir usando “Incluir na próxima publicação”. Em Direção, salve público, clima e anúncio. Em Espetáculos, programe confrontos e escolha visibilidade. A prévia mostra a próxima publicação. “Mostrar para os jogadores” cria ou atualiza outro JournalEntry, somente com campos públicos, e abre a apresentação nos clientes conectados. Os jogadores navegam livremente pelos lugares, personagens revelados, modalidades e programação publicados. Alterações posteriores ficam em preparação até uma nova publicação.
-
-“Fechar apresentação” limpa o conteúdo da cópia pública e fecha a janela nos clientes. Isso não desfaz o que alguém já leu ou copiou. Quem entrar depois consegue abrir o último cartaz ainda ativo pelo menu. O JournalEntry público guarda dados em flags para esta interface; sua folha padrão não é a apresentação.
-
-## Modo enxuto, jogos e mapas
-
-O cartaz novo começa apenas com **Duelo do Anel**, **Batalha de Equipes**, **Corrida dos Escorpiões** e **Jogo do Silêncio** liberados. Na aba **Jogos**, a Mestra pode liberar ou ocultar cada modalidade individualmente. Um jogo oculto não é publicado: jogadores não o veem como jogo disponível, nem no dossiê nem no painel de Jogos.
-
-Os quatro cards ativos trazem miniatura, notas de condução e **Criar e abrir cena-modelo**. A primeira abertura cria uma Cena privada, que depois pode ser reaberta pelo card. Os mapas são originais, ortogonais e pensados para Tokens: Arena da Prova (equipes), Anel da Areia Negra (duelo), Pista de Mirmir (corrida) e Pátio das Campânulas (silêncio). Não há perspectiva inclinada nos mapas distribuídos.
-
-## Batalha de equipes e apostas
-
-Batalha de Equipes é a primeira modalidade implementada a fundo. Ao programá-la, defina formato, terreno, objetivo, condição de vitória, limite de rodadas, enfermaria e política de mortes. Escale três Actors por lado; podem ser competidores do Teatro, NPCs externos ou personagens de jogadores. Se não escolher Actors e as equipes tiverem integrantes vinculados, os três primeiros de cada uma serão usados. As condições são objetivos, eliminação, rendição e tempo; o painel registra o placar e as mortes. Iniciar a luta fecha apostas e marca o evento como em andamento. Quando a equipe alcança o alvo por objetivo ou eliminação, a vitória e os pagamentos são lançados; rendição, tempo e qualquer decisão narrativa podem ser fechados pelos botões de resultado. A anulação devolve todas as entradas.
-
-Cada card de Batalha de Equipes exibe a miniatura da **Areia da Prova**, uma arena original 30×20 do Deserto de Mirmir incluída no módulo. Use **Montar arena, Tokens e iniciativa**: o módulo cria ou reutiliza uma Cena privada, coloca cada lado nas três entradas oeste/leste, monta um Combate apenas para aquela prova e rola a iniciativa. O botão **Abrir mapa da prova** leva a Mestra à Cena para ajustar livremente Tokens, paredes ou cenário antes de começar. **Reconstruir escalação nas zonas** remove apenas os Tokens e o Combate pertencentes àquela prova, reposiciona os seis selecionados e rola uma iniciativa nova.
-
-Crie equipes antes da batalha e inscreva Actors existentes no mundo. A inscrição registra o membro no Teatro e salva a tag `quedaco-teatro.competitor` no Actor com equipe, papel e data; ela não altera ficha, poderes, itens, HP ou ownership.
+O resgate exige propriedade da ficha e um mestre conectado. A identificação de pagamento evita resgates repetidos. Bilhetes continuam acessíveis depois de remover a inscrição do personagem. Anular uma prova devolve as apostas conforme o fluxo de liquidação/resgate.
 
 ## Duelo do Anel
 
-O **Duelo do Anel** é uma prova 1 contra 1 completa. Antes da abertura das apostas, escolha dois Actors diferentes e anuncie condição de vitória (rendição, desarme, incapacidade, pontos ou decisão por tempo), política de magia, armas, efeito de sair do anel, mortes, enfermaria e limite de rodadas. As cotações, apostas, anulação e liquidação usam o mesmo livro-caixa seguro das demais provas.
+Escolha dois personagens diferentes: NPCs ou jogadores inscritos, sem obrigação de pertencer a uma equipe. Jogadores só participam do modo **Na mesa**. A predefinição preenche regras e prêmio; o mestre pode ajustar antes de anunciar.
 
-Use **Montar Anel, Tokens e iniciativa** para criar uma Cena exclusiva chamada **Anel da Areia Negra**: ela usa a arte original já incluída, posiciona os dois duelistas no círculo central e cria um Combate próprio com iniciativa rolada. Os controles em andamento só oferecem o resultado previsto no regulamento; para pontos e saída do anel o placar é atualizado, e para rendição, desarme ou incapacidade a vitória é encerrada imediatamente. O mestre ainda pode registrar um resultado narrativo pelos botões de vitória ou anular e devolver as entradas.
+É possível editar participantes antes de preparar a Cena. A edição devolve entradas de apostas automáticas dos NPCs e refaz esses bilhetes quando as apostas estão abertas. Se houver uma aposta de jogador ou avulsa pendente, anule a prova e crie outra para não mudar o confronto depois do pagamento.
 
-## Circuito inicial e futuras fichas
+**Montar Anel, Tokens e iniciativa** cria a Cena da prova, posiciona duelistas e monta o Combate. O combate real continua sendo conduzido pelo mestre e pelo sistema Skyfall. O mapa tático tem visão de cima; arte de entrada/portal é uma imagem narrativa separada.
 
-Na aba **Elenco**, a Mestra instala uma vez o Circuito Inicial: Dunas de Vidro, Filhos do Atoleiro, Lâminas do Crepúsculo e Quebravento, cada uma com quatro competidores e estilo próprio; há ainda 16 apostadores e oito pessoas de bastidor. Todo registro possui origem, objetivo, receio, segredo, rotina, itens narrativos, dinheiro e gancho de cena.
+Simulações dispensam Cena e geram vencedor, placar e motivo narrativo. O sorteio usa chances iguais entre os lados, sem fama. Não é um simulador mecânico de combate Skyfall e não gasta recursos das fichas. Resultados de provas já encerradas são preservados.
 
-Com **QUEDAÇO - Personagens Skyfall RPG** instalado e ativo, use **Criar / sincronizar fichas do elenco**. O Teatro contém os 40 modelos e os entrega ao Criador apenas quando você pede a sincronização. No Criador v0.1.9 ou superior, eles seguem como um lote assinado único; em versões anteriores, continuam pela ponte individual compatível. Em ambos os casos, o Criador confere todos os compêndios da mesa antes de gravar Actors nativos. Cada Actor recebe a proveniência `quedaco-teatro`, tags de circuito/função/equipe e `quedaco-teatro.npc`; os 16 competidores recebem também `quedaco-teatro.competitor`. Um segundo uso não duplica modelos já criados e restaura os vínculos com equipe, apostador ou bastidor. Se a criação em si falhar depois de alguma ficha, o Criador preserva a ficha pendente para revisão e informa o erro — nunca apaga ou recria Actors automaticamente.
+## Fichas, retratos e vendedores
 
-Depois da sincronização, procure no diretório **Actors › Teatro dos Condenados**. Dentro dele há as pastas **Equipes** (com uma pasta por equipe), **Apostadores** e **Bastidores**. Arraste qualquer Actor de lá para a Cena; na aba **Equipes**, os cards com miniatura também abrem a ficha com um clique e podem ser arrastados.
+No **Dossiê → Preparar fichas e imagens · Mestre**, use a opção de aplicar modelos com o **QUEDAÇO — Personagens Skyfall RPG** ativo. O circuito contém 44 modelos: 16 competidores, 16 apostadores, oito pessoas de bastidor e quatro vendedores. O Criador valida os compêndios antes de gravar Actors; modelos já vinculados não são duplicados. Os registros usam tags estáveis, não só o nome.
 
-Apenas o mestre registra apostas nesta versão. As cotações são decimais: apostar 100 a 1,75 retorna 175 no total se vencer. A cotação fica congelada no bilhete. Cadastre apostadores da plateia com origem, objetivo, perfil, caixa e dívida para criar conversa, suspeita e ganchos de contrato; o caixa do apostador diminui ao entrar e recebe o retorno na liquidação. Pode vincular o registro a um Actor, mas o módulo não transfere moedas nem itens entre fichas.
+Depois de criar, procure **Actors → Teatro dos Condenados**, com pastas de Equipes, Apostadores e Bastidores. Arraste fichas desse diretório para a Cena. Os cards vinculados permitem abrir a ficha.
 
-Equipes têm fama e patrocinador privado; somente nome e fama são publicados quando autorizados. Contratos guardam parte, condições e dívida, com registro de encerramento. Quitação não altera automaticamente caixa ou dívida nas fichas. Incidentes usam rolagem local do Foundry, sem mensagem pública de chat.
+Para fichas já criadas, há uma ação de **atualizar imagens do circuito**: substitui apenas retratos/texturas ausentes, genéricos ou a antiga imagem compartilhada, incluindo Tokens colocados nas Cenas. Imagens personalizadas são preservadas. Os 44 arquivos individuais vêm do acervo local fornecido pelo usuário.
 
-## Privacidade e armazenamento
+Os retratos são ilustrativos. Esta atualização não redesenhou os modelos mecânicos antigos: eles ainda usam o preset validado de Anuro/Bufonin e Combatente/Militar. Histórias e pertences narrativos são próprios, mas não equivalem a 44 construções mecânicas distintas. Revisar classe, ancestralidade e equipamentos mecânicos continua sendo uma etapa editorial separada; não se sobrescrevem fichas existentes para adaptá-las à arte.
 
-O estado de campanha, os segredos editados, as apostas e os contratos ficam no JournalEntry de direção com ownership default NONE. A publicação usa uma lista explícita de campos e ownership OBSERVER. Nenhum socket transmite a direção e nenhum segredo de campanha é salvo em settings globais. O acesso é controlado pelas permissões de documentos do Foundry. Não conceda acesso ao diário privado. O material inicial vem nos arquivos distribuídos do módulo: como em qualquer aventura instalada, alguém que inspecione esses arquivos pode ler seu conteúdo autoral original. Isso não expõe as notas privadas gravadas no mundo.
+Vendedores no Dossiê: **Safira do Odre** (água e provisões), **Dara Rebite** (manutenção), **Ilen Folha-Seca** (higiene e curativos) e **Nilo dos Ecos** (mensagens e lembranças). Têm antecedentes, segredos e ofertas com preços sugeridos. Compras, entrega de itens e eventual cura são conduzidas manualmente pelo mestre.
 
-Escritas são serializadas no cliente; formulários verificam revisão para detectar edições antigas. Esta versão presume um mestre editando por vez: não possui trava de transação entre mestres em computadores diferentes. Faça backup do mundo para preservar os dados. Desativar o módulo não apaga seus diários.
+## Privacidade e atualização
 
-## Integração QUEDAÇO v1
+O JournalEntry de direção é privado. O cartaz público recebe apenas campos explicitamente selecionados; o Dossiê, os NPCs apostadores e notas privadas não são publicados. Não conceda aos jogadores acesso ao diário de direção. Como em qualquer conteúdo distribuído, textos originais dentro dos arquivos do módulo podem ser inspecionados; isso não concede acesso às notas privadas do mundo.
 
-Funciona sem outros módulos. Publica o descritor `family: 'quedaco'`, `contractVersion: 1`, capacidades `openTheatre` e `publicPresentation`, e o hook `quedaco:register` após a inicialização. `openTheatre()` abre a interface adequada ao usuário; `getPublicPresentation()` retorna cópia do cartaz ativo ou null; `getStatus()` é síncrono, sem dados privados e informa inicialização e geração compatível. `connections: []` indica que não há consultas funcionais a outros módulos implementadas nesta versão.
+**Mostrar para os jogadores** publica o cartaz. Novas inscrições e apostas atualizam seus dados; encerrar apostas ou finalizar a prova atualiza o resultado quando há apresentação ativa. Outras mudanças de preparação podem exigir publicar novamente. **Fechar apresentação** retira o cartaz, mas não desfaz o que alguém já viu.
 
-## Verificação e escopo
+Faça backup do mundo antes de aplicar uma atualização. Escritas são serializadas por cliente e revisões detectam formulários antigos, mas não há trava transacional entre mestres em computadores diferentes: use um mestre responsável por vez.
 
-`npm test` verifica projeções, permissões, finanças, publicação e revisões em um host simulado. `npm run test:ui` usa o Playwright já instalado em `../quedaco-campanhas`, com Edge, para testar o app real em uma simulação de Foundry e gerar capturas em output. `npm run package` gera o ZIP. Teste integrado com mestre e jogador em um mundo real ainda é necessário; o manifesto não declara uma geração como verified antes disso.
+## Verificação local
 
-Além da Areia da Prova e dos Actors do Circuito, o módulo ainda não cria compêndios, tabelas oficiais ou torneios automatizados. As próximas modalidades poderão reutilizar o mesmo padrão de Cena, escalação, zonas de entrada, Tokens e Combate; o combate continua usando as regras nativas do sistema Skyfall.
+- `npm test`: testes de regras, projeções públicas, dinheiro, fichas, equipes e migrações.
+- `npm run test:ui`: interface real do módulo em um host Foundry **simulado**, usando Playwright/Edge disponível em `../quedaco-campanhas`; capturas em `output/`.
+- `npm run package`: produz `dist/quedaco-teatro.zip` e o manifesto local.
+
+O manifesto mantém o alvo Foundry 13 do projeto. Os testes locais não substituem a validação no servidor real com contas de mestre e jogador e os compêndios Skyfall instalados. Esta atualização não foi aplicada ao servidor remoto.

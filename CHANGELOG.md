@@ -1,3 +1,15 @@
+# 0.12.0
+
+- Equipes em cards verticais recolhíveis, criação em destaque, edição de integrantes e exclusão de registros sem apagar Actors ou histórico. Limite de cinco membros, ameaças excluídas e entrada de jogadores em equipes de NPCs somente com autorização do mestre.
+- Classes e retratos lidos das fichas, inclusive para inscrições antigas. Fama fica oculta e deixa de influenciar novas simulações.
+- Duelo permite escolher participantes sem depender de equipes. Alterar a escalação refaz apostas automáticas de NPCs; apostas de jogadores impedem mudanças até anular a prova.
+- Apostas em dinheiro de 1 a 100 pilas, atalhos de valores e retorno visível. Ganhos antigos continuam resgatáveis após remoção da inscrição.
+- Provas encerradas vão para uma gaveta de histórico. Caixa narrativo dos NPCs é reservado ao mestre e reabastecido quando necessário; saldo dos jogadores que optam por apostar aparece no cartaz.
+- 44 retratos individuais do acervo local e reparação de retratos/protótipos/Tokens antigos, preservando imagens personalizadas. Os modelos mecânicos anteriores não foram redesenhados.
+- Quatro vendedores com história e ofertas sugeridas no Dossiê. Negociação e entrega de produtos continuam manuais.
+- Preparação de fichas e imagens sai de Equipes e fica recolhida no Dossiê do mestre. Apenas Duelo do Anel continua ativo por padrão.
+- Verificação automatizada de regras e interface em host simulado; validação no servidor real ainda necessária.
+
 # 0.11.1
 
 - Deixa apenas Duelo do Anel ativo por padrão, inclusive em mundos já configurados. Outras modalidades ficam na gaveta de desativadas e somem do cartaz após publicar novamente.

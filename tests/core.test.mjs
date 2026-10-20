@@ -4,6 +4,7 @@ import {CATALOG} from '../src/catalog.mjs';
 import {ACTIVE_GAME_IDS,ID,initialState,normalizeState,publicState,addBettor,addEvent,placeBet,recordBattle,recordDuel,settleEvent,startBattle,startDuel} from '../src/model.mjs';
 import {createStore} from '../src/store.mjs';
 import {renderView} from '../src/view.mjs';
+import {VENDORS} from '../src/vendors.mjs';
 import {CIRCUIT_BETTORS,CIRCUIT_NPCS,CIRCUIT_PERSONNEL,CIRCUIT_TEAMS,applyCircuitActorLinks,createCircuitActors,installCircuit,synchronizeCircuitCompetitorTags} from '../src/roster.mjs';
 import {ARENA_MAP,DUEL_MAP,GAME_MAPS,prepareArena,prepareDuelArena,prepareGameScene,resolveParticipants,resolveDuelists} from '../src/arena.mjs';
 const fixture=()=>{
@@ -16,11 +17,12 @@ const fixture=()=>{
 };
 const event=s=>addEvent(s,{name:'Final',a:'Areia',b:'Sangue',oddsA:1.75,oddsB:2.2,game:'Duelo'},'ev');
 test('projeção pública usa campos explícitos e remove notas, contas e segredos',()=>{
-  const s=initialState(CATALOG);s.notes='SEGREDO-PRIVADO';s.entries[0].secret='SEGREDO-DO-NPC';s.contracts.push({terms:'SEGREDO-CONTRATO'});s.bets.push({bettor:'SEGREDO-APOSTA'});
-  event(s);s.events[0].secret='SEGREDO-DA-PROVA';s.teams.push({id:'t',name:'Público',fame:4,visible:true,sponsor:'SEGREDO-PATRONO'},{id:'hidden',name:'SEGREDO-EQUIPE',visible:false});
+  const s=initialState(CATALOG);s.notes='SEGREDO-PRIVADO';s.entries[0].secret='SEGREDO-DO-NPC';s.entries[0].text='SEGREDO-DOSSIE';s.contracts.push({terms:'SEGREDO-CONTRATO'});s.bets.push({bettor:'SEGREDO-APOSTA'});
+  event(s);s.events[0].secret='SEGREDO-DA-PROVA';s.teams.push({id:'t',name:'Público',fame:4,visible:true,sponsor:'Patrocinador anunciado',secret:'SEGREDO-PATRONO'},{id:'hidden',name:'SEGREDO-EQUIPE',visible:false});
   const p=publicState(s);
   assert.doesNotMatch(JSON.stringify(p),/SEGREDO/);
   assert.equal(p.entries.some(r=>r.id==='ruinas'),false);
+  assert.ok(p.entries.every(r=>r.category==='game'));
   assert.equal(p.teams.length,1);
   assert.doesNotMatch(renderView({state:p}),/data-qt-action="publish"|data-qt-form|Segredos e condução|Livro de apostas/);
 });
@@ -82,14 +84,14 @@ test('apostador cadastrado precisa ter caixa e recebe o retorno no próprio regi
 });
 test('circuito inicial cria equipes, elenco, apostadores e não pode ser duplicado',()=>{
   const s=initialState(CATALOG);installCircuit(s);
-  assert.equal(s.teams.length,CIRCUIT_TEAMS.length);assert.equal(s.bettors.length,CIRCUIT_BETTORS.length);assert.equal(s.personnel.length,CIRCUIT_PERSONNEL.length);
+  assert.equal(s.teams.length,CIRCUIT_TEAMS.length);assert.equal(s.bettors.length,CIRCUIT_BETTORS.length);assert.equal(s.personnel.length,CIRCUIT_PERSONNEL.length+VENDORS.length);
   assert.equal(s.teams.flatMap(t=>t.members).length,16);
   assert.throws(()=>installCircuit(s),/já foi instalado/);
   assert.doesNotMatch(JSON.stringify(publicState(s)),/Cinta Negra|Mão de Cobre|Hedra Pálida/);
 });
 test('modelos do circuito são detalhados, estáveis e a sincronização não duplica Actors',async()=>{
-  assert.equal(CIRCUIT_NPCS.length,40);
-  assert.equal(new Set(CIRCUIT_NPCS.map(row=>row.model.id)).size,40);
+  assert.equal(CIRCUIT_NPCS.length,44);
+  assert.equal(new Set(CIRCUIT_NPCS.map(row=>row.model.id)).size,44);
   for(const row of CIRCUIT_NPCS){
     assert.ok(Array.isArray(row.model.possessions),`${row.model.name}: pertences devem ser uma lista`);
     assert.ok(row.model.possessions.every(item=>typeof item==='string'&&item.trim().length>1));
@@ -102,19 +104,19 @@ test('modelos do circuito são detalhados, estáveis e a sincronização não du
   const calls=[];
   const creator={capabilities:{npcTemplates:true},async prepareNpcTemplate(model){return {signature:`sig:${model.id}`};},async createNpcFromTemplate(model,{expectedSignature}){calls.push([model.id,expectedSignature]);const index=CIRCUIT_NPCS.findIndex(row=>row.model.id===model.id);return {status:'existing',actorUuid:actors[index].uuid};}};
   const result=await createCircuitActors(creator,{game:{actors}});
-  assert.equal(result.created,0);assert.equal(result.existing,40);assert.equal(calls.length,40);
+  assert.equal(result.created,0);assert.equal(result.existing,44);assert.equal(calls.length,44);
   assert.equal(actors.filter(actor=>actor.flags['quedaco-teatro']?.competitor).length,16);
   const s=initialState(CATALOG);installCircuit(s);applyCircuitActorLinks(s,result.linked);
   assert.equal(s.teams.flatMap(team=>team.members).filter(member=>member.actorId).length,16);
-  assert.equal(s.bettors.filter(row=>row.actorId).length,16);assert.equal(s.personnel.filter(row=>row.actorId).length,8);
+  assert.equal(s.bettors.filter(row=>row.actorId).length,16);assert.equal(s.personnel.filter(row=>row.actorId).length,12);
   await synchronizeCircuitCompetitorTags(s,{game:{actors:{get:id=>actors.find(actor=>actor.id===id)}}});
   assert.ok(actors.filter(actor=>actor.flags['quedaco-teatro']?.competitor?.teamId).length===16);
 });
-test('Criador com suporte a lote recebe os 40 modelos em uma única prévia assinada',async()=>{
+test('Criador com suporte a lote recebe os 44 modelos em uma única prévia assinada',async()=>{
   const actors=CIRCUIT_NPCS.map((row,index)=>({id:`batch-${index}`,uuid:`Actor.batch${index}`,async setFlag(){}}));let prepared=0,created=0;
-  const creator={capabilities:{npcTemplates:true,npcBatch:true},async prepareNpcBatch(batch){prepared++;assert.equal(batch.npcs.length,40);return {signature:'lote-assinado',errors:[]};},async createNpcBatch(_batch,{expectedSignature}){created++;assert.equal(expectedSignature,'lote-assinado');return {created:0,existing:40,warnings:[],results:CIRCUIT_NPCS.map((row,index)=>({id:row.model.id,name:row.model.name,status:'existing',actorUuid:actors[index].uuid}))};}};
+  const creator={capabilities:{npcTemplates:true,npcBatch:true},async prepareNpcBatch(batch){prepared++;assert.equal(batch.npcs.length,44);return {signature:'lote-assinado',errors:[]};},async createNpcBatch(_batch,{expectedSignature}){created++;assert.equal(expectedSignature,'lote-assinado');return {created:0,existing:44,warnings:[],results:CIRCUIT_NPCS.map((row,index)=>({id:row.model.id,name:row.model.name,status:'existing',actorUuid:actors[index].uuid}))};}};
   const result=await createCircuitActors(creator,{game:{actors}});
-  assert.equal(prepared,1);assert.equal(created,1);assert.equal(result.linked.length,40);assert.equal(result.existing,40);
+  assert.equal(prepared,1);assert.equal(created,1);assert.equal(result.linked.length,44);assert.equal(result.existing,44);
 });
 test('arena cria Cena, seis Tokens nas zonas, Combate e iniciativa sem aceitar escalação inválida',async()=>{
   const s=initialState(CATALOG);const actors=Array.from({length:6},(_,index)=>({id:`actor-${index}`,name:`Actor ${index}`,prototypeToken:{toObject:()=>({name:`Actor ${index}`})},async getTokenDocument(data){return {toObject:()=>({name:this.name,...data})};}}));

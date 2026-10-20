@@ -1,4 +1,5 @@
 import {ID, TITLE, clone, initialState, normalizeState, publicState, uid} from './model.mjs';
+import {syncParticipants} from './participation.mjs';
 export function createStore(game, {create, seed, uuid=uid} = {}) {
   let queue = Promise.resolve();
   const serial = fn => {const result=queue.then(fn); queue=result.catch(()=>{}); return result;};
@@ -18,14 +19,14 @@ export function createStore(game, {create, seed, uuid=uid} = {}) {
         const doc=find('source'), state=clone(normalizeState(data(doc)?.state));
         if(!state)throw Error('Direção indisponível.');
         if(expectedRevision!==undefined && state.revision!==expectedRevision)throw Error('Os dados mudaram. Atualize a janela antes de salvar.');
-        await fn(state); state.revision++;
+        await fn(state);syncParticipants(state,game.actors); state.revision++;
         await write(doc,'source',{state},false); return clone(state);
       });
     },
     async publish() {
       gm(); return serial(async()=>{
         const raw=data(find('source'))?.state;
-        const state=raw?normalizeState(clone(raw)):null;
+        const state=raw?syncParticipants(normalizeState(clone(raw)),game.actors):null;
         if(!state)throw Error('Direção indisponível.');
         const publication={active:true,token:uuid(),sourceRevision:state.revision,...publicState(state)};
         await write(find('publication'),'publication',{publication},true);
@@ -35,9 +36,11 @@ export function createStore(game, {create, seed, uuid=uid} = {}) {
     async refreshMembers() {
       gm();return serial(async()=>{
         const doc=find('publication'),previous=data(doc)?.publication;if(!previous?.active)return;
-        const state=normalizeState(clone(data(find('source')).state)),next=publicState(state);
+        const state=syncParticipants(normalizeState(clone(data(find('source')).state)),game.actors),next=publicState(state);
         const eventIds=new Set(previous.events.map(e=>e.id));
-        const publication={...clone(previous),token:uuid(),memberships:next.memberships,invitations:next.invitations,playerBets:next.playerBets.filter(b=>eventIds.has(b.eventId)),enrollments:next.enrollments.filter(e=>eventIds.has(e.eventId)),bettingActivity:next.bettingActivity.filter(b=>eventIds.has(b.eventId)),teams:[...previous.teams.filter(t=>!t.ownerActorId),...next.teams.filter(t=>t.ownerActorId)]};
+        const teams=previous.teams.filter(t=>state.teams.some(current=>current.id===t.id)).map(t=>{const current=next.teams.find(row=>row.id===t.id);return current?{...t,members:current.members,ownerActorId:current.ownerActorId}:t;});
+        teams.push(...next.teams.filter(t=>t.playerTeam&&!previous.teams.some(old=>old.id===t.id)));
+        const publication={...clone(previous),token:uuid(),memberships:next.memberships,invitations:next.invitations,playerBets:next.playerBets.filter(b=>eventIds.has(b.eventId)),enrollments:next.enrollments.filter(e=>eventIds.has(e.eventId)),bettingActivity:next.bettingActivity.filter(b=>eventIds.has(b.eventId)),teams};
         await write(doc,'publication',{publication},true);
       });
     },

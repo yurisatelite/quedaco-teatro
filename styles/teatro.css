@@ -111,3 +111,24 @@
   .qt-shell [hidden] { display:none!important; }
   @media(max-width:650px) { .qt-layout{grid-template-columns:1fr}.qt-layout aside{padding:12px;border-right:0;border-bottom:1px solid var(--qt-line)}.qt-layout aside>p{display:none}.qt-layout nav{display:flex;flex-wrap:wrap;margin:10px 0}.qt-layout main{padding:16px}.qt-top{padding:16px;flex-wrap:wrap}.qt-fields{grid-template-columns:1fr}.qt-toolbar{padding:12px}.qt-hero{padding:22px}.qt-hero p{max-width:100%}.qt-versus strong{font-size:16px} }
   @media(prefers-reduced-motion:reduce) { .qt-shell *{animation:none!important;transition:none!important} }
+
+  .qt-team-grid { display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;align-items:start; }
+  .qt-team-tile { border:1px solid var(--qt-line);background:var(--qt-panel);border-radius:12px;overflow:hidden;padding:14px;min-width:0;margin:0; }
+  .qt-team-tile>summary { text-align:center;cursor:pointer;list-style:none;aspect-ratio:3/4;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px; }
+  .qt-team-tile summary h3,.qt-team-tile summary p { margin:0; }
+  .qt-team-tile .qt-team-emblem { width:64px;height:64px;object-fit:contain;font-size:48px;color:#a1e3b7; }
+  .qt-team-stats { display:grid;gap:7px;font-size:13px; }
+  .qt-team-tile form { margin:12px 0;padding:10px; }
+  .qt-team-tile label:has(input[type=checkbox]) { display:flex;align-items:center; }
+  .qt-team-tile input[type=checkbox] { width:18px;min-height:18px; }
+  .qt-new-team { border:1px dashed #68b187;background:#1c3026; }
+  .qt-team-person { display:flex;gap:8px;align-items:center;border-bottom:1px solid var(--qt-line);padding:10px 0;flex-wrap:wrap; }
+  .qt-team-person img { width:46px;height:46px;object-fit:contain; }
+  .qt-team-person>div { flex:1;min-width:0; }
+  .qt-team-person small { display:block; }
+  .qt-shell .qt-danger { color:#ffb0a7;border-color:#9a524b; }
+  .qt-warning { color:#ffca7e; }
+  .qt-shell output { display:block;margin:12px 0;color:#b3e9c1; }
+  .qt-member-grid { grid-template-columns:repeat(auto-fill,minmax(220px,280px));justify-content:start; }
+  @media(max-width:900px) { .qt-team-grid{grid-template-columns:repeat(2,minmax(0,1fr))} }
+  @media(max-width:650px) { .qt-team-grid{grid-template-columns:1fr}.qt-member-grid{grid-template-columns:1fr} }

@@ -25,7 +25,11 @@ export function normalizeState(state) {
   // Aplica o foco no Anel também a mundos que já liberavam os quatro portais.
   // Uma única migração permite que o mestre volte a liberar modalidades no futuro.
   if(!state.duelFocusInitialized){for(const entry of state.entries??[])if(entry.category==='game')entry.revealed=entry.id==='duelo';state.duelFocusInitialized=true;}
-  for (const team of state.teams) { team.members ??= []; team.visible ??= false; team.fame ??= 0; team.sponsor ??= ''; }
+  for (const team of state.teams) {
+    team.members ??= []; team.visible ??= false; team.fame ??= 0; team.sponsor ??= '';
+    team.playerTeam ??= Boolean(team.ownerActorId);team.allowPlayers ??= false;
+    if(!team.statsInitialized){team.wins??=team.playerTeam?0:Math.floor(Math.random()*9)+2;team.losses??=team.playerTeam?0:Math.floor(Math.random()*5);team.statsInitialized=true;team.narrativeRecord=!team.playerTeam;}
+  }
   for (const event of state.events) {
     event.status ??= 'open'; event.visible ??= true; event.winner ??= null;
     if (event.game === 'Batalha de Equipes') {event.battle ??= battleSetup({});event.battle.participants ??=[[],[]];event.battle.sceneId ??='';event.battle.combatId ??='';event.battle.mapId ??='areia-prova';}
@@ -39,14 +43,14 @@ export function publicState(state) {
   return {
     schema:1, announcement:state.announcement, currency:state.currency,
     crowd:state.crowd, mood:state.mood,
-    memberships:(state.memberships??[]).map(m=>({actorId:m.actorId,name:m.name,img:m.img,role:m.role})),
+    memberships:(state.memberships??[]).filter(m=>m.player!==false).map(m=>({actorId:m.actorId,name:m.name,img:m.img,role:m.role,bettor:Boolean(m.bettor),...(m.bettor?{cash:m.cash??0}:{})})),
     invitations:(state.invitations??[]).map(i=>({id:i.id,teamId:i.teamId,actorId:i.actorId})),
     enrollments:(state.enrollments??[]).map(i=>({eventId:i.eventId,actorId:i.actorId,name:i.name})),
-    bettingActivity:state.bets.filter(b=>b.eventId&&state.events.some(ev=>ev.id===b.eventId&&eventVisible(ev))).map(b=>({name:b.bettor,actorId:b.actorId??'',eventId:b.eventId,stake:b.stake,status:b.status})),
-    entries:state.entries.filter(e => e.revealed).map(e => ({id:e.id, category:e.category, name:e.name, text:e.text})),
+    bettingActivity:state.bets.filter(b=>b.actorId&&b.eventId&&state.events.some(ev=>ev.id===b.eventId&&eventVisible(ev))).map(b=>({name:b.bettor,actorId:b.actorId,eventId:b.eventId,stake:b.stake,status:b.status})),
+    entries:state.entries.filter(e => e.category==='game'&&e.revealed).map(e => ({id:e.id, category:e.category, name:e.name, text:e.text})),
     events:state.events.filter(eventVisible).map(e => ({id:e.id, name:e.name, game:e.game, sides:[...e.sides], terrain:e.terrain, reward:e.reward, status:e.status, winner:e.winner, odds:[...e.odds],mode:e.mode,lineup:e.lineup?.map(side=>side.map(m=>({actorId:m.actorId,name:m.name,img:m.img,role:m.role}))),result:e.result?{winner:e.result.winner,score:[...e.result.score],reason:e.result.reason,draw:e.result.draw,total:e.result.total,weights:[...e.result.weights]}:null, battle:e.battle ? publicBattle(e.battle) : null, duel:e.duel ? publicDuel(e.duel) : null})),
     playerBets:state.bets.filter(b=>b.actorId).map(b=>({id:b.id,actorId:b.actorId,eventId:b.eventId,side:b.side,stake:b.stake,status:b.status,payout:b.payout,claimed:Boolean(b.claimed)})),
-    teams:state.teams.filter(t => t.visible).map(t => ({id:t.id, name:t.name, fame:t.fame,ownerActorId:t.ownerActorId??'',open:Boolean(t.open), members:(t.members ?? []).map(m => ({actorId:m.actorId,name:m.name,img:m.img, role:m.role}))}))
+    teams:state.teams.filter(t => t.visible).map(t => ({id:t.id,name:t.name,sponsor:t.sponsor,wins:t.wins??0,losses:t.losses??0,playerTeam:Boolean(t.playerTeam),allowPlayers:Boolean(t.allowPlayers),ownerActorId:t.ownerActorId??'',open:Boolean(t.open),members:(t.members ?? []).map(m => ({actorId:m.actorId,name:m.name,img:m.img,role:m.role}))}))
   };
 }
 const choices = new Set(['objetivos','eliminação','rendição','tempo']);
@@ -107,6 +111,7 @@ export function settleEvent(state, eventId, winner) {
   if (![0,1,'void'].includes(winner)) throw Error('Resultado inválido.');
   event.status = winner === 'void' ? 'void' : 'settled';
   event.winner = winner;
+  if(winner!=='void'&&event.teamIds?.[0]!==event.teamIds?.[1])for(let side=0;side<2;side++){const team=state.teams.find(t=>t.id===event.teamIds?.[side]);if(team){const key=side===winner?'wins':'losses';team[key]=Number(team[key]??0)+1;}}
   for (const bet of state.bets.filter(b => b.eventId === eventId && b.status === 'pending')) {
     bet.payout = winner === 'void' ? bet.stake : bet.side === winner ? amount(bet.stake * bet.odds) : 0;
     bet.status = winner === 'void' ? 'refunded' : bet.payout ? 'won' : 'lost';

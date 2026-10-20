@@ -16,7 +16,7 @@ Hooks.once('init',()=>{
 Hooks.once('ready',async()=>{
   try{
     store=createStore(game,{create:data=>foundry.documents.JournalEntry.create(data),seed:async()=>(await import('./catalog.mjs')).CATALOG});
-    if(game.user.isGM)await store.initialize();
+    if(game.user.isGM){await store.initialize();const leader=Array.from(game.users??[]).filter(u=>u.active&&u.isGM).sort((a,b)=>a.id.localeCompare(b.id))[0];if(!leader||leader.id===game.user.id){const {installVendors}=await import('./vendors.mjs');await store.mutate(s=>installVendors(s));}}
     const App=createTheatreApp(store);app=new App();
     app.sendMemberRequest=connectMembership(store,{game,onChange:()=>{if(app.rendered&&!app.dirty)void app.render({force:true});}});
     const module=game.modules.get(ID);
@@ -43,4 +43,12 @@ Hooks.on('getSceneControlButtons',controls=>{
   const tool={name:ID,title:'QT.Title',icon:'fa-solid fa-masks-theater',button:true,order:98,onClick:()=>void openTheatre().catch(err=>ui.notifications.error(err.message))};
   if(Array.isArray(controls))controls.find(c=>c.name==='tokens')?.tools.push(tool);
   else if(controls.tokens?.tools)controls.tokens.tools[ID]=tool;
+});
+
+// Atualiza classe e saldo público a partir da ficha real, sem alterar o restante do cartaz.
+let memberRefreshTimer;
+for(const hook of ['updateActor','createItem','updateItem','deleteItem'])Hooks.on(hook,()=>{
+  if(!game.user.isGM||!store)return;
+  const leader=Array.from(game.users??[]).filter(u=>u.active&&u.isGM).sort((a,b)=>a.id.localeCompare(b.id))[0];if(leader&&leader.id!==game.user.id)return;
+  clearTimeout(memberRefreshTimer);memberRefreshTimer=setTimeout(()=>{void store.refreshMembers().then(()=>{if(app?.rendered&&!app.dirty)return app.render({force:true});}).catch(error=>console.error(ID,error));},300);
 });
